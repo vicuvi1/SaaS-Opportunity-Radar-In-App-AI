@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 // ── Shared sub-schemas ────────────────────────────────────────────────────────
 
@@ -29,8 +29,8 @@ export const finisherPainClusterSchema = z.object({
 
 // ── Comprehensive finisher schema ────────────────────────────────────────────
 // Contains everything needed to turn a validated idea into a real startup:
-// 1. Strategic blueprint  (new — defines what to build)
-// 2. Market research      (deep evidence — pain, demand, signals)
+// 1. Strategic blueprint  (new - defines what to build)
+// 2. Market research      (deep evidence - pain, demand, signals)
 // 3. Market context       (size, trends, competition)
 // 4. Execution materials  (build artifacts, launch copy, founder fit)
 

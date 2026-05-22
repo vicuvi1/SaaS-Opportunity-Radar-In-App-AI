@@ -1,7 +1,10 @@
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
-export async function DELETE() {
+export const dynamic = "force-dynamic";
+
+export async function DELETE(req: Request) {
+  void req;
   const supabase = await createClient();
   if (!supabase) {
     return Response.json({ error: "Supabase not configured." }, { status: 503 });

@@ -1,7 +1,7 @@
 import { streamText, Output } from "ai";
 import { gatherDemandSnippets, snippetsToPromptDigest } from "@/lib/demand/gather";
 import { extractSearchQuery } from "@/lib/demand/extract-query";
-import { getLanguageModel } from "@/lib/ai/model";
+import { getAnalystModel } from "@/lib/ai/model";
 import { ANALYST_SYSTEM, buildAnalystPrompt } from "@/lib/ai/prompts";
 import { ideaReportSchema } from "@/lib/schemas/idea-report";
 
@@ -46,11 +46,11 @@ export async function POST(req: Request) {
 
     let model;
     try {
-      model = getLanguageModel();
+      model = getAnalystModel();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Model configuration error.";
       return Response.json(
-        { error: msg, hint: "Set OPENAI_API_KEY in .env" },
+        { error: msg, hint: "Set ANTHROPIC_API_KEY in .env" },
         { status: 503 },
       );
     }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -6,15 +6,16 @@ import { createClient } from "@/lib/supabase/client";
 import { saveFounderProfile, type FounderProfile } from "@/lib/profile/founder-profile";
 import {
   ROLE_OPTIONS,
-  MARKET_OPTIONS,
+  SKILL_OPTIONS,
+  COMMUNITY_OPTIONS,
   TECH_OPTIONS,
   GOAL_OPTIONS,
   MONETIZATION_OPTIONS,
-  MARKET_SET,
+  BUILD_TYPE_OPTIONS,
 } from "@/lib/profile/options";
 import { ChipGroup } from "@/components/ui/chip-group";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
@@ -45,12 +46,12 @@ function SectionLabel({ children }: { children: string }) {
 
 function ProfileSummary({ profile }: { profile: FounderProfile }) {
   const tags: string[] = [];
-  if (profile.role) tags.push(profile.role);
-  if (profile.technicalLevel?.length) tags.push(...profile.technicalLevel);
-  if (profile.goal) tags.push(profile.goal);
-  if (profile.monetizationPref) tags.push(profile.monetizationPref);
-  const interestCount = profile.interests?.length ?? 0;
-  if (interestCount > 0) tags.push(`${interestCount} market${interestCount !== 1 ? "s" : ""}`);
+  if (profile.role?.length) tags.push(...profile.role);
+  if (profile.technicalLevel) tags.push(profile.technicalLevel);
+  if (profile.goal?.length) tags.push(...profile.goal);
+  if (profile.monetizationPref?.length) tags.push(...profile.monetizationPref);
+  const communityCount = profile.communities?.length ?? 0;
+  if (communityCount > 0) tags.push(`${communityCount} communit${communityCount !== 1 ? "ies" : "y"}`);
 
   if (tags.length === 0) {
     return <p className="text-xs text-muted-foreground italic">No profile set yet.</p>;
@@ -85,34 +86,39 @@ export function SettingsPanel({
 }) {
   const [profileExpanded, setProfileExpanded] = useState(false);
 
-  const [role, setRole] = useState("");
-  const [markets, setMarkets] = useState<string[]>([]);
-  const [customMarket, setCustomMarket] = useState("");
-  const [technicalLevel, setTechnicalLevel] = useState<string[]>([]);
-  const [goal, setGoal] = useState("");
-  const [monetizationPref, setMonetizationPref] = useState("");
+  const [role, setRole] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [communities, setCommunities] = useState<string[]>([]);
+  const [technicalLevel, setTechnicalLevel] = useState("");
+  const [goal, setGoal] = useState<string[]>([]);
+  const [monetizationPref, setMonetizationPref] = useState<string[]>([]);
+  const [buildType, setBuildType] = useState<string[]>([]);
+  const [additionalContext, setAdditionalContext] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Sync form to saved profile each time the sheet opens
+  // Sync form state from saved profile each time the sheet opens
   useEffect(() => {
     if (!open) return;
     setProfileExpanded(false);
     if (founderProfile) {
-      setRole(founderProfile.role ?? "");
-      const interests = founderProfile.interests ?? [];
-      setMarkets(interests.filter((i) => MARKET_SET.has(i)));
-      setCustomMarket(interests.filter((i) => !MARKET_SET.has(i)).join(", "));
-      setTechnicalLevel(founderProfile.technicalLevel ?? []);
-      setGoal(founderProfile.goal ?? "");
-      setMonetizationPref(founderProfile.monetizationPref ?? "");
+      setRole(founderProfile.role ?? []);
+      setSkills(founderProfile.skills ?? []);
+      setCommunities(founderProfile.communities ?? []);
+      setTechnicalLevel(founderProfile.technicalLevel ?? "");
+      setGoal(founderProfile.goal ?? []);
+      setMonetizationPref(founderProfile.monetizationPref ?? []);
+      setBuildType(founderProfile.buildType ?? []);
+      setAdditionalContext(founderProfile.additionalContext ?? "");
     } else {
-      setRole("");
-      setMarkets([]);
-      setCustomMarket("");
-      setTechnicalLevel([]);
-      setGoal("");
-      setMonetizationPref("");
+      setRole([]);
+      setSkills([]);
+      setCommunities([]);
+      setTechnicalLevel("");
+      setGoal([]);
+      setMonetizationPref([]);
+      setBuildType([]);
+      setAdditionalContext("");
     }
   }, [open, founderProfile]);
 
@@ -122,18 +128,15 @@ export function SettingsPanel({
   async function handleSaveProfile() {
     const supabase = createClient();
     if (!supabase) return;
-    const allInterests = [
-      ...markets,
-      ...(customMarket.trim()
-        ? customMarket.split(",").map((s) => s.trim()).filter(Boolean)
-        : []),
-    ];
     const updated: FounderProfile = {
       role,
+      skills,
       technicalLevel,
-      interests: allInterests,
+      communities,
       goal,
-      monetizationPref: monetizationPref || "Not sure yet",
+      monetizationPref,
+      buildType,
+      additionalContext: additionalContext.trim() || undefined,
       completedAt: founderProfile?.completedAt ?? new Date().toISOString(),
     };
     setSaving(true);
@@ -172,7 +175,7 @@ export function SettingsPanel({
         <ScrollArea className="min-h-0 flex-1">
           <div className="p-5 space-y-8">
 
-            {/* ── Account ──────────────────────────────────────────────── */}
+            {/* Account */}
             <section className="space-y-3">
               <SectionLabel>Account</SectionLabel>
               <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/50 px-4 py-3">
@@ -195,7 +198,7 @@ export function SettingsPanel({
 
             <Separator className="opacity-50" />
 
-            {/* ── Founder Profile ───────────────────────────────────────── */}
+            {/* Founder Profile */}
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -253,33 +256,86 @@ export function SettingsPanel({
 
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-foreground">What best describes you?</p>
-                    <ChipGroup options={ROLE_OPTIONS} selected={role} onChange={(v) => setRole(v as string)} />
+                    <ChipGroup
+                      options={ROLE_OPTIONS}
+                      selected={role}
+                      multi
+                      allowCustom
+                      customPlaceholder="Add your own role..."
+                      onChange={(v) => setRole(v as string[])}
+                    />
                   </div>
 
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-foreground">Markets you know from the inside</p>
-                    <ChipGroup options={MARKET_OPTIONS} selected={markets} multi onChange={(v) => setMarkets(v as string[])} />
-                    <Input
-                      placeholder="Add your own (comma-separated)"
-                      value={customMarket}
-                      onChange={(e) => setCustomMarket(e.target.value)}
-                      className="border-border/60 bg-background/60 text-sm h-8 text-xs mt-1"
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-foreground">Skills & expertise</p>
+                    <ChipGroup
+                      options={SKILL_OPTIONS}
+                      selected={skills}
+                      multi
+                      allowCustom
+                      searchable
+                      searchPlaceholder="Search skills (e.g. marketing, data analysis)..."
+                      customPlaceholder="Add a skill..."
+                      onChange={(v) => setSkills(v as string[])}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-foreground">Communities you&apos;re embedded in</p>
+                    <p className="text-[11px] text-muted-foreground/60">Groups you have genuine access to - not just topics you&apos;re interested in.</p>
+                    <ChipGroup
+                      options={COMMUNITY_OPTIONS}
+                      selected={communities}
+                      multi
+                      allowCustom
+                      searchable
+                      searchPlaceholder="Search communities (e.g. poker players, gym owners)..."
+                      customPlaceholder="Add a community..."
+                      onChange={(v) => setCommunities(v as string[])}
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-foreground">Technical ability</p>
-                    <ChipGroup options={TECH_OPTIONS} selected={technicalLevel} multi onChange={(v) => setTechnicalLevel(v as string[])} />
+                    <ChipGroup
+                      options={TECH_OPTIONS}
+                      selected={technicalLevel}
+                      onChange={(v) => setTechnicalLevel(v as string)}
+                    />
                   </div>
 
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-foreground">What are you building toward?</p>
-                    <ChipGroup options={GOAL_OPTIONS} selected={goal} onChange={(v) => setGoal(v as string)} />
+                    <ChipGroup
+                      options={GOAL_OPTIONS}
+                      selected={goal}
+                      multi
+                      allowCustom
+                      customPlaceholder="Add your own goal..."
+                      onChange={(v) => setGoal(v as string[])}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-foreground">What type of business do you want to build?</p>
+                    <ChipGroup
+                      options={BUILD_TYPE_OPTIONS}
+                      selected={buildType}
+                      multi
+                      onChange={(v) => setBuildType(v as string[])}
+                    />
                   </div>
 
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-foreground">Monetization preference</p>
-                    <ChipGroup options={MONETIZATION_OPTIONS} selected={monetizationPref} onChange={(v) => setMonetizationPref(v as string)} />
+                    <ChipGroup
+                      options={MONETIZATION_OPTIONS}
+                      selected={monetizationPref}
+                      multi
+                      allowCustom
+                      customPlaceholder="Add a monetization model..."
+                      onChange={(v) => setMonetizationPref(v as string[])}
+                    />
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -313,7 +369,7 @@ export function SettingsPanel({
 
             <Separator className="opacity-50" />
 
-            {/* ── Danger Zone ───────────────────────────────────────────── */}
+            {/* Danger Zone */}
             <section className="space-y-3">
               <SectionLabel>Danger Zone</SectionLabel>
 

@@ -31,7 +31,7 @@ export const ideaDiscoverySchema = z.object({
   founderSummary: z.object({
     role:                   z.string(),
     skills:                 z.array(z.string()),
-    interests:              z.array(z.string()),
+    communities:            z.array(z.string()),
     keyAdvantages:          z.array(z.string()),
     monetizationPreference: z.string(),
   }),

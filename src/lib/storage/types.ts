@@ -1,4 +1,4 @@
-import type { ForgeThread } from "@/lib/workspace/types";
+﻿import type { ForgeThread } from "@/lib/workspace/types";
 
 export type StoredMessage = {
   id: string;
@@ -10,7 +10,7 @@ export type StoredMessage = {
 /**
  * Every storage backend implements this interface.
  * Swap Supabase for anything else by writing a new provider
- * and changing the export in index.ts — no app code changes needed.
+ * and changing the export in index.ts - no app code changes needed.
  */
 export interface StorageProvider {
   /** Load all threads for the current user, newest first. */

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
@@ -16,6 +16,14 @@ import { ReportPanel } from "@/components/workspace/report-panel";
 import { FinisherBlueprint } from "@/components/workspace/finisher-blueprint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +31,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowRight,
+  Bookmark,
   ChevronDown,
   ChevronUp,
   GripVertical,
@@ -38,9 +47,10 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { StorageProvider, StoredMessage } from "@/lib/storage";
+import type { SavedIdea } from "@/lib/saved-ideas";
 
 function textFromMessage(m: UIMessage): string {
   return m.parts
@@ -91,6 +101,10 @@ export function IdeaStudio({
   initialMessages,
   onNewThread,
   founderProfile,
+  onOpenSettings,
+  savedIdeas = [],
+  onSaveIdea,
+  onUnsaveIdea,
 }: {
   thread: ForgeThread;
   onPatch: (patch: Partial<ForgeThread>) => void;
@@ -100,10 +114,18 @@ export function IdeaStudio({
   initialMessages?: UIMessage[];
   onNewThread?: () => void;
   founderProfile?: FounderProfile | null;
+  onOpenSettings?: (open?: boolean) => void;
+  savedIdeas?: SavedIdea[];
+  onSaveIdea?: (idea: Omit<SavedIdea, "id" | "savedAt">) => void;
+  onUnsaveIdea?: (id: string) => void;
 }) {
   const [mode, setMode] = useState<Mode>("validate");
   const modeRef = useRef<Mode>("validate");
   useEffect(() => { modeRef.current = mode; }, [mode]);
+
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [viewingSavedIdea, setViewingSavedIdea] = useState<SavedIdea | null>(null);
 
   const [selectedDiscoveryIdea, setSelectedDiscoveryIdea] = useState<DiscoveryIdea | null>(null);
 
@@ -234,12 +256,12 @@ export function IdeaStudio({
   useEffect(() => {
     reportSnapshotRef.current.value = {
       topic: topic.trim(),
-      founderProfile: founder.trim(),
+      founderProfile: founderProfile ? founderProfileToText(founderProfile) : founder.trim(),
       report: report ?? thread.report ?? null,
       blueprint: blueprint ?? null,
       selectedDiscoveryIdea: selectedDiscoveryIdea ?? null,
     };
-  }, [report, thread.report, topic, founder, blueprint, selectedDiscoveryIdea]);
+  }, [report, thread.report, topic, founder, founderProfile, blueprint, selectedDiscoveryIdea]);
 
   useEffect(() => {
     onLiveReport(report);
@@ -256,10 +278,11 @@ export function IdeaStudio({
   const runAnalyze = useCallback(() => {
     const t = topic.trim();
     if (!t) return;
-    onPatch({ topic: t, founderProfile: founder.trim(), updatedAt: Date.now() });
+    const profileText = founderProfile ? founderProfileToText(founderProfile) : founder.trim();
+    onPatch({ topic: t, founderProfile: profileText, updatedAt: Date.now() });
     clearAnalyze();
-    submitAnalyze({ topic: t, founderProfile: founder.trim() });
-  }, [topic, founder, submitAnalyze, clearAnalyze, onPatch]);
+    submitAnalyze({ topic: t, founderProfile: profileText });
+  }, [topic, founder, founderProfile, submitAnalyze, clearAnalyze, onPatch]);
 
   const runDiscover = useCallback(() => {
     clearDiscover();
@@ -272,13 +295,14 @@ export function IdeaStudio({
   const runFinisher = useCallback(() => {
     const t = (topic.trim() || thread.topic).trim();
     if (!t) return;
+    const profileText = founderProfile ? founderProfileToText(founderProfile) : founder.trim();
     clearBlueprint();
     submitFinisher({
       topic: t,
-      founderProfile: founder.trim() || undefined,
+      founderProfile: profileText || undefined,
       report: thread.report ?? undefined,
     });
-  }, [topic, founder, thread, submitFinisher, clearBlueprint]);
+  }, [topic, founder, founderProfile, thread, submitFinisher, clearBlueprint]);
 
   const validateIdea = useCallback((idea: DiscoveryIdea) => {
     setMode("validate");
@@ -324,7 +348,7 @@ export function IdeaStudio({
         {/* Top panel: mode toggle + mode-specific form */}
         <div className="glass-panel shrink-0 border-b border-border/70 px-5 py-3">
 
-          {/* Mode toggle — always visible */}
+          {/* Mode toggle - always visible */}
           <div className="mb-3 flex gap-1 rounded-xl border border-border/60 bg-muted/30 p-1 w-fit">
             <button
               type="button"
@@ -352,7 +376,13 @@ export function IdeaStudio({
             </button>
             <button
               type="button"
-              onClick={() => setMode("finish")}
+              onClick={() => {
+                if (activeReport) {
+                  setMode("finish");
+                } else {
+                  setShowFinishConfirm(true);
+                }
+              }}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 mode === "finish"
                   ? "bg-background text-foreground shadow-sm"
@@ -364,19 +394,62 @@ export function IdeaStudio({
             </button>
           </div>
 
+          {/* Confirmation dialog - shown when entering Finisher without a validated idea */}
+          <Dialog open={showFinishConfirm} onOpenChange={setShowFinishConfirm}>
+            <DialogContent showCloseButton={false} className="max-w-sm">
+              <DialogHeader>
+                <div className="flex items-center gap-2 mb-1">
+                  <TriangleAlert className="size-4 text-amber-400 shrink-0" />
+                  <DialogTitle>No validated idea yet</DialogTitle>
+                </div>
+                <DialogDescription>
+                  The Idea Finisher builds your full startup blueprint. Without validation, it has no real market evidence to work from - the blueprint will be based on assumptions rather than real Reddit, HN, and GitHub signals.
+                  <br /><br />
+                  We strongly recommend running a validation first. It only takes a minute.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-muted-foreground"
+                  onClick={() => {
+                    setShowFinishConfirm(false);
+                    setMode("finish");
+                  }}
+                >
+                  Continue anyway
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    setShowFinishConfirm(false);
+                    setMode("validate");
+                  }}
+                >
+                  <Target className="size-3.5" />
+                  Validate first
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* CREATE mode form */}
           {mode === "create" && (
             <div className="flex flex-col gap-3">
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Brainstorm with the chat on the right, or use the form below to generate a grid of ideas from your niche or skills.
+                Brainstorm with the chat on the right, or generate a full idea grid below. Your saved founder profile is used automatically.
               </p>
               <div className="space-y-1.5">
-                <Label htmlFor="niche">Niche, skills, or market</Label>
+                <Label htmlFor="niche">Anything to add? (optional)</Label>
                 <Textarea
                   id="niche"
                   rows={2}
                   className="min-h-[64px] resize-none border-border/70 bg-background/65 text-sm"
-                  placeholder="e.g. fitness, pet care, restaurants, real estate, parenting… or leave blank to explore across everything"
+                  placeholder="Overrides your profile if there's a conflict. e.g. focus on crypto even though it's not in my profile, solo-buildable only, under $500 to launch, ignore my profile and explore healthcare..."
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
                 />
@@ -404,8 +477,129 @@ export function IdeaStudio({
                   <span>{discoverError.message}</span>
                 </div>
               )}
+
+              {/* Saved ideas */}
+              <div className="rounded-lg border border-border/50 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setSavedOpen((o) => !o)}
+                  className="flex w-full items-center justify-between px-3 py-2 hover:bg-muted/20 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Bookmark className="size-3 text-muted-foreground/70" />
+                    <span className="text-[11px] text-muted-foreground/80">Saved ideas</span>
+                    {savedIdeas.length > 0 && (
+                      <span className="rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground/80">
+                        {savedIdeas.length}
+                      </span>
+                    )}
+                  </div>
+                  <ChevronDown className={`size-3 text-muted-foreground/50 transition-transform ${savedOpen ? "rotate-180" : ""}`} />
+                </button>
+                {savedOpen && (
+                  <div className="border-t border-border/50 max-h-44 overflow-y-auto divide-y divide-border/30">
+                    {savedIdeas.length === 0 ? (
+                      <p className="px-3 py-2.5 text-[11px] text-muted-foreground/60 italic">No saved ideas yet. Bookmark cards below to save them here.</p>
+                    ) : (
+                      savedIdeas.map((idea) => (
+                        <div key={idea.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted/10 transition-colors">
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 text-left"
+                            onClick={() => setViewingSavedIdea(idea)}
+                          >
+                            <p className="truncate text-xs text-foreground/80 hover:text-foreground transition-colors">{idea.title}</p>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-0.5">
+                            <Button
+                              type="button" size="sm" variant="ghost"
+                              className="h-6 px-2 text-[11px] text-muted-foreground/70 gap-1 hover:text-foreground"
+                              onClick={() => validateIdea({ title: idea.title, oneLiner: idea.oneLiner ?? "", whyYou: idea.whyYou ?? "", whyNow: idea.whyNow ?? "", monetizationPath: idea.monetizationPath ?? "", targetAudience: "", coreWedge: "", firstValidationStep: "", founderFitScore: { skillMatch: 0, distributionAdvantage: 0, executionSpeed: 0, monetizationFit: 0 }, opportunityScore: 0, tags: idea.tags ?? [] })}
+                            >
+                              Validate
+                              <ArrowRight className="size-3" />
+                            </Button>
+                            <button
+                              type="button"
+                              onClick={() => onUnsaveIdea?.(idea.id)}
+                              className="p-1 text-muted-foreground/50 hover:text-destructive transition-colors"
+                              aria-label="Remove"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
+
+          {/* Saved idea detail dialog */}
+          <Dialog open={!!viewingSavedIdea} onOpenChange={(o) => { if (!o) setViewingSavedIdea(null); }}>
+            <DialogContent className="max-w-sm" showCloseButton>
+              {viewingSavedIdea && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="text-sm leading-snug">{viewingSavedIdea.title}</DialogTitle>
+                    {viewingSavedIdea.oneLiner && (
+                      <DialogDescription>{viewingSavedIdea.oneLiner}</DialogDescription>
+                    )}
+                  </DialogHeader>
+                  <div className="space-y-3 text-xs">
+                    {viewingSavedIdea.whyYou && (
+                      <p className="text-foreground/75 leading-relaxed">
+                        <span className="text-muted-foreground/60">Why you: </span>{viewingSavedIdea.whyYou}
+                      </p>
+                    )}
+                    {viewingSavedIdea.whyNow && (
+                      <p className="text-foreground/75 leading-relaxed">
+                        <span className="text-muted-foreground/60">Why now: </span>{viewingSavedIdea.whyNow}
+                      </p>
+                    )}
+                    {viewingSavedIdea.monetizationPath && (
+                      <p className="rounded-md bg-muted/30 px-2 py-1.5 text-muted-foreground">
+                        💰 {viewingSavedIdea.monetizationPath}
+                      </p>
+                    )}
+                    {(viewingSavedIdea.tags?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {viewingSavedIdea.tags!.map((tag, i) => (
+                          <Badge key={i} variant="secondary" className="text-[10px]">{tag}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button" size="sm" variant="outline"
+                      className="gap-1.5 text-muted-foreground"
+                      onClick={() => {
+                        onUnsaveIdea?.(viewingSavedIdea.id);
+                        setViewingSavedIdea(null);
+                      }}
+                    >
+                      <X className="size-3.5" />
+                      Remove
+                    </Button>
+                    <Button
+                      type="button" size="sm"
+                      className="gap-1.5"
+                      onClick={() => {
+                        validateIdea({ title: viewingSavedIdea.title, oneLiner: viewingSavedIdea.oneLiner ?? "", whyYou: viewingSavedIdea.whyYou ?? "", whyNow: viewingSavedIdea.whyNow ?? "", monetizationPath: viewingSavedIdea.monetizationPath ?? "", targetAudience: "", coreWedge: "", firstValidationStep: "", founderFitScore: { skillMatch: 0, distributionAdvantage: 0, executionSpeed: 0, monetizationFit: 0 }, opportunityScore: 0, tags: viewingSavedIdea.tags ?? [] });
+                        setViewingSavedIdea(null);
+                      }}
+                    >
+                      Validate
+                      <ArrowRight className="size-3.5" />
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* VALIDATE mode form */}
           {mode === "validate" && (
@@ -413,9 +607,11 @@ export function IdeaStudio({
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{topic || "Untitled"}</p>
-                  {founder.trim() && (
-                    <p className="truncate text-[11px] text-muted-foreground">{founder.slice(0, 80)}</p>
-                  )}
+                  {founderProfile?.goal?.length ? (
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      Goal: {founderProfile.goal.join(", ")}
+                    </p>
+                  ) : null}
                 </div>
                 <Button
                   type="button" size="sm" variant="ghost"
@@ -455,17 +651,31 @@ export function IdeaStudio({
                     onChange={(e) => setTopic(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="founder">About you (optional)</Label>
-                  <Textarea
-                    id="founder"
-                    rows={2}
-                    className="min-h-[64px] resize-none border-border/70 bg-background/65 text-sm"
-                    placeholder="e.g. I can build basic websites, I have about 10 hours a week, a $200 budget, and I know a lot of people in the fitness industry"
-                    value={founder}
-                    onChange={(e) => setFounder(e.target.value)}
-                  />
-                </div>
+                {founderProfile?.goal?.length ? (
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Score is relative to your goal:{" "}
+                    <span className="font-medium text-foreground">{founderProfile.goal.join(", ")}</span>.{" "}
+                    <button
+                      type="button"
+                      className="underline underline-offset-2 hover:text-foreground transition-colors"
+                      onClick={() => onOpenSettings?.(true)}
+                    >
+                      Change in settings
+                    </button>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Score is based on general startup viability.{" "}
+                    <button
+                      type="button"
+                      className="underline underline-offset-2 hover:text-foreground transition-colors"
+                      onClick={() => onOpenSettings?.(true)}
+                    >
+                      Set your goal in settings
+                    </button>{" "}
+                    for a score tailored to what you are building.
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
@@ -513,61 +723,88 @@ export function IdeaStudio({
 
           {/* FINISH mode bar */}
           {mode === "finish" && (
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                {activeReport?.title || topic ? (
-                  <>
-                    <p className="truncate text-sm font-medium">{activeReport?.title || topic}</p>
-                    {typeof activeReport?.validationQuality?.buildGateScore === "number" && (
-                      <p className="text-[11px] text-muted-foreground">
-                        Validated:{" "}
-                        <span className={`font-semibold ${
-                          activeReport.validationQuality.buildGateScore >= 65 ? "text-emerald-400" :
-                          activeReport.validationQuality.buildGateScore >= 40 ? "text-amber-400" : "text-red-400"
-                        }`}>
-                          {activeReport.validationQuality.buildGateScore}/100
-                        </span>
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No idea yet. Validate one first or add a topic in Validate mode.</p>
-                )}
+            activeReport ? (
+              /* Compact bar - validated idea ready */
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{activeReport.title || topic}</p>
+                  {typeof activeReport.validationQuality?.buildGateScore === "number" && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Validated:{" "}
+                      <span className={`font-semibold ${
+                        activeReport.validationQuality.buildGateScore >= 65 ? "text-emerald-400" :
+                        activeReport.validationQuality.buildGateScore >= 40 ? "text-amber-400" : "text-red-400"
+                      }`}>
+                        {activeReport.validationQuality.buildGateScore}/100
+                      </span>
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="button" size="sm" variant="ghost"
+                  className="shrink-0 gap-1.5 text-xs text-muted-foreground"
+                  onClick={resetSession}
+                >
+                  <RotateCcw className="size-3.5" />
+                  Reset
+                </Button>
+                <Button
+                  type="button" size="sm"
+                  disabled={generating}
+                  onClick={runFinisher}
+                  className="shrink-0 gap-1.5"
+                >
+                  {generating
+                    ? <Loader2 className="size-3.5 animate-spin" />
+                    : <Rocket className="size-3.5" />
+                  }
+                  {blueprint ? "Regenerate" : "Generate Blueprint"}
+                </Button>
               </div>
-              {(activeReport?.title || topic.trim() || thread.topic) ? (
-                <>
+            ) : (
+              /* Expanded form - user entered without validating */
+              <div className="flex flex-col gap-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="finish-topic">Your idea</Label>
+                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                      No validation
+                    </span>
+                  </div>
+                  <Input
+                    id="finish-topic"
+                    placeholder='e.g. "A tool that helps restaurant owners manage reservations without expensive software"'
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
-                    type="button" size="sm" variant="ghost"
-                    className="shrink-0 gap-1.5 text-xs text-muted-foreground"
-                    onClick={resetSession}
-                  >
-                    <RotateCcw className="size-3.5" />
-                    Reset
-                  </Button>
-                  <Button
-                    type="button" size="sm"
-                    disabled={generating}
-                    onClick={blueprint ? () => runFinisher() : runFinisher}
-                    className="shrink-0 gap-1.5"
+                    type="button"
+                    size="sm"
+                    disabled={generating || !topic.trim()}
+                    onClick={runFinisher}
+                    className="gap-2 shadow-md shadow-primary/20"
                   >
                     {generating
                       ? <Loader2 className="size-3.5 animate-spin" />
                       : <Rocket className="size-3.5" />
                     }
-                    {blueprint ? "Regenerate" : "Generate Blueprint"}
+                    {generating ? "Generating…" : "Generate Blueprint"}
                   </Button>
-                </>
-              ) : (
-                <Button
-                  type="button" size="sm" variant="outline"
-                  className="shrink-0 gap-1.5 text-xs"
-                  onClick={() => setMode("validate")}
-                >
-                  <Target className="size-3.5" />
-                  Validate first
-                </Button>
-              )}
-            </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-muted-foreground"
+                    onClick={() => setMode("validate")}
+                  >
+                    <Target className="size-3.5" />
+                    Validate instead
+                  </Button>
+                </div>
+              </div>
+            )
           )}
 
         </div>
@@ -582,6 +819,9 @@ export function IdeaStudio({
               onSelect={(idea) => setSelectedDiscoveryIdea(idea)}
               selectedTitle={selectedDiscoveryIdea?.title}
               hasProfile={!!founderProfile}
+              savedIdeas={savedIdeas}
+              onSaveIdea={onSaveIdea}
+              onUnsaveIdea={onUnsaveIdea}
             />
           ) : mode === "validate" ? (
             analyzing ? <AnalysisLoading /> : <ReportPanel partial={report} streaming={false} onSwitchToFinisher={() => setMode("finish")} />
@@ -613,7 +853,7 @@ export function IdeaStudio({
           <p className="text-xs text-muted-foreground">{chatMeta.description}</p>
         </div>
 
-        {/* Selected idea banner — create mode only */}
+        {/* Selected idea banner - create mode only */}
         {mode === "create" && selectedDiscoveryIdea && (
           <div className="shrink-0 border-b border-border/60 bg-primary/[0.06] px-3 py-2 flex items-start gap-2">
             <Lightbulb className="size-3.5 shrink-0 mt-0.5 text-primary/70" />
@@ -821,6 +1061,9 @@ function DiscoverResults({
   onSelect,
   selectedTitle,
   hasProfile,
+  savedIdeas = [],
+  onSaveIdea,
+  onUnsaveIdea,
 }: {
   data: DeepPartial<IdeaDiscovery> | undefined;
   streaming: boolean;
@@ -828,23 +1071,18 @@ function DiscoverResults({
   onSelect: (idea: DiscoveryIdea) => void;
   selectedTitle?: string;
   hasProfile: boolean;
+  savedIdeas?: SavedIdea[];
+  onSaveIdea?: (idea: Omit<SavedIdea, "id" | "savedAt">) => void;
+  onUnsaveIdea?: (id: string) => void;
 }) {
   const zones = data?.opportunityZones ?? [];
   const summary = data?.founderSummary;
 
-  if (!streaming && zones.length === 0) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
-        <Sparkles className="size-10 opacity-30" />
-        <p className="font-medium text-foreground">Your Opportunity Map</p>
-        <p className="max-w-xs">
-          {hasProfile
-            ? "Describe a niche or market above, then click Generate. We'll map the startup opportunities you're best positioned to execute."
-            : "Describe your background and interests above. The engine will surface opportunities matched to your unfair advantages."}
-        </p>
-      </div>
-    );
-  }
+  const savedById = useMemo(() => {
+    const map = new Map<string, string>();
+    savedIdeas.forEach((s) => map.set(s.title, s.id));
+    return map;
+  }, [savedIdeas]);
 
   return (
     <ScrollArea className="h-full">
@@ -867,7 +1105,7 @@ function DiscoverResults({
                   {s}
                 </span>
               ))}
-              {summary.interests?.map((s, i) => s && (
+              {summary.communities?.map((s, i) => s && (
                 <span key={i} className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] text-primary/80">
                   {s}
                 </span>
@@ -883,6 +1121,19 @@ function DiscoverResults({
                 ))}
               </ul>
             )}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!streaming && zones.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+            <Sparkles className="size-8 opacity-20" />
+            <p className="text-sm font-medium text-foreground">Your Opportunity Map</p>
+            <p className="max-w-xs text-xs text-muted-foreground">
+              {hasProfile
+                ? "Describe a niche or market above, then click Generate. We'll map the startup opportunities you're best positioned to execute."
+                : "Describe a niche or problem above, or set your Founder Profile - the engine maps opportunities matched to your real distribution advantages."}
+            </p>
           </div>
         )}
 
@@ -919,17 +1170,40 @@ function DiscoverResults({
                         : "border-border/60 bg-background/50"
                     }`}
                   >
-                    {/* Title + score */}
+                    {/* Title + bookmark */}
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold leading-snug">{idea.title ?? "…"}</p>
-                      {typeof idea.opportunityScore === "number" && (
-                        <Badge className={`shrink-0 text-[10px] ${
-                          idea.opportunityScore >= 70 ? "bg-emerald-600/25 text-emerald-200" :
-                          idea.opportunityScore >= 45 ? "bg-amber-600/25 text-amber-200" :
-                                                        "bg-muted text-muted-foreground"
-                        }`}>
-                          {idea.opportunityScore}
-                        </Badge>
+                      <p className="text-sm font-semibold leading-snug flex-1">{idea.title ?? "…"}</p>
+                      {idea.title && (
+                        <button
+                          type="button"
+                          aria-label={savedById.has(idea.title) ? "Unsave idea" : "Save idea"}
+                          onClick={() => {
+                            const savedId = savedById.get(idea.title!);
+                            if (savedId) {
+                              onUnsaveIdea?.(savedId);
+                            } else {
+                              onSaveIdea?.({
+                                title: idea.title!,
+                                oneLiner: idea.oneLiner,
+                                whyYou: idea.whyYou,
+                                whyNow: idea.whyNow,
+                                monetizationPath: idea.monetizationPath,
+                                tags: (idea.tags?.filter(Boolean) as string[]) ?? [],
+                              });
+                            }
+                          }}
+                          className={`shrink-0 mt-0.5 transition-colors ${
+                            savedById.has(idea.title!)
+                              ? "text-foreground"
+                              : "text-muted-foreground/70 hover:text-foreground"
+                          }`}
+                        >
+                          <Bookmark
+                            className="size-3.5"
+                            fill={savedById.has(idea.title!) ? "currentColor" : "none"}
+                            strokeWidth={savedById.has(idea.title!) ? 1 : 1.75}
+                          />
+                        </button>
                       )}
                     </div>
 

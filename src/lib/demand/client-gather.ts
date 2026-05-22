@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { stripHtml } from "./strip-html";
 
@@ -131,7 +131,7 @@ function formatDigest(snippets: ClientSnippet[]): string {
   }
   return snippets
     .map((s, i) => {
-      const head = `[${i + 1}] ${s.source}${s.title ? ` — ${s.title}` : ""}${s.url ? ` (${s.url})` : ""}`;
+      const head = `[${i + 1}] ${s.source}${s.title ? ` - ${s.title}` : ""}${s.url ? ` (${s.url})` : ""}`;
       return `${head}\n${s.text}`;
     })
     .join("\n\n---\n\n");

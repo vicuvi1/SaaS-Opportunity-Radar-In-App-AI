@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { DeepPartial } from "ai";
 import type { User } from "@supabase/supabase-js";
@@ -21,6 +21,12 @@ import {
   saveFounderProfile,
   type FounderProfile,
 } from "@/lib/profile/founder-profile";
+import {
+  loadSavedIdeas,
+  saveIdea,
+  unsaveIdea,
+  type SavedIdea,
+} from "@/lib/saved-ideas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -78,6 +84,9 @@ export function Workspace() {
   const [founderProfile, setFounderProfile] = useState<FounderProfile | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>([]);
+  // Stable ref to supabase client for use inside saved-idea callbacks.
+  const supabaseRef = useRef<ReturnType<typeof createClient>>(null);
 
   // providerRef for stable use inside callbacks; provider state for reactive prop passing
   const providerRef = useRef<StorageProvider>(localProvider);
@@ -86,7 +95,7 @@ export function Workspace() {
   // don't both trigger a full provider switch and thread reload.
   const authedUserIdRef = useRef<string | null>(null);
   // When non-null, the messages effect skips its Supabase load and immediately
-  // marks ready — used when messages are pre-loaded before an activeId change.
+  // marks ready - used when messages are pre-loaded before an activeId change.
   const preloadedForRef = useRef<string | null>(null);
   // Mirror of threads state accessible inside callbacks without adding it to deps.
   const threadsRef = useRef<ForgeThread[]>([]);
@@ -99,10 +108,11 @@ export function Workspace() {
 
   // ── Auth: single source of truth, no localStorage fallback ──────────────────
   // We wait for auth to resolve before showing anything. Once confirmed, all
-  // reads/writes go exclusively to Supabase — localStorage is never used.
+  // reads/writes go exclusively to Supabase - localStorage is never used.
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) { setAuthChecked(true); return; }
+    supabaseRef.current = supabase;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -118,20 +128,25 @@ export function Workspace() {
         setUser(nextUser);
         setAuthChecked(true);
 
-        // INITIAL_SESSION + SIGNED_IN both fire on mount — only wire up once.
+        // INITIAL_SESSION + SIGNED_IN both fire on mount - only wire up once.
         if (authedUserIdRef.current === nextUser.id) return;
         authedUserIdRef.current = nextUser.id;
 
         const sbProvider = createSupabaseProvider(supabase, nextUser.id);
         switchProvider(sbProvider);
 
-        // Load founder profile — show onboarding if not set yet.
+        // Load founder profile - show onboarding if not set yet.
         loadFounderProfile(supabase, nextUser.id)
           .then((p) => {
             if (p) { setFounderProfile(p); }
             else { setShowOnboarding(true); }
           })
-          .catch(() => { /* DB unreachable — skip onboarding silently */ });
+          .catch(() => { /* DB unreachable - skip onboarding silently */ });
+
+        // Load saved ideas in the background.
+        loadSavedIdeas(supabase, nextUser.id)
+          .then(setSavedIdeas)
+          .catch(() => { /* non-fatal */ });
 
         // Show a blank thread immediately so the UI is never blocked waiting
         // for a Supabase round-trip. We'll replace it once threads load.
@@ -150,12 +165,12 @@ export function Workspace() {
               setActiveId(sorted[0].id);
               setLiveReport(sorted[0].report ?? undefined);
             } else {
-              // No existing threads — persist the placeholder we already showed.
+              // No existing threads - persist the placeholder we already showed.
               void sbProvider.upsertThread(placeholder);
             }
           })
           .catch(() => {
-            // Supabase unreachable — keep the placeholder; it will be saved
+            // Supabase unreachable - keep the placeholder; it will be saved
             // to Supabase on the user's first patchThread call.
             void sbProvider.upsertThread(placeholder);
           });
@@ -228,7 +243,7 @@ export function Workspace() {
       return;
     }
 
-    // Deleting the active thread — identify the fallback now, then preload its
+    // Deleting the active thread - identify the fallback now, then preload its
     // messages before switching so the UI never shows a spinner.
     const next = threadsRef.current.filter((t) => t.id !== id);
     const fallback = next[0] ?? null;
@@ -268,7 +283,7 @@ export function Workspace() {
   const createThread = useCallback(() => {
     const t = newBlankThread();
     void providerRef.current.upsertThread(t);
-    // New thread has no messages — preload empty so the effect skips Supabase.
+    // New thread has no messages - preload empty so the effect skips Supabase.
     preloadedForRef.current = t.id;
     setActiveMessages([]);
     setThreads((prev) => [t, ...prev]);
@@ -334,6 +349,22 @@ export function Workspace() {
 
   const stableAnalyzing = useCallback((v: boolean) => setAnalyzing(v), []);
 
+  const handleSaveIdea = useCallback(async (idea: Omit<SavedIdea, "id" | "savedAt">) => {
+    const supabase = supabaseRef.current;
+    const uid = authedUserIdRef.current;
+    if (!supabase || !uid) return;
+    const saved = await saveIdea(supabase, uid, idea);
+    if (saved) setSavedIdeas((prev) => [saved, ...prev]);
+  }, []);
+
+  const handleUnsaveIdea = useCallback(async (ideaId: string) => {
+    const supabase = supabaseRef.current;
+    const uid = authedUserIdRef.current;
+    if (!supabase || !uid) return;
+    await unsaveIdea(supabase, uid, ideaId);
+    setSavedIdeas((prev) => prev.filter((s) => s.id !== ideaId));
+  }, []);
+
   // Full-screen spinner while we wait for Supabase auth to resolve
   if (!authChecked) {
     return (
@@ -343,7 +374,7 @@ export function Workspace() {
     );
   }
 
-  // Auth gate — show sign-in screen until user is confirmed
+  // Auth gate - show sign-in screen until user is confirmed
   if (!user) {
     return (
       <div className="noise-overlay subtle-grid relative flex h-[100dvh] flex-col items-center justify-center bg-background text-foreground">
@@ -431,7 +462,7 @@ export function Workspace() {
       />
 
       <div className="flex min-h-0 flex-1">
-        {/* Sidebar — always visible regardless of loading state */}
+        {/* Sidebar - always visible regardless of loading state */}
         <aside
           className={`flex shrink-0 flex-col border-r border-border/70 bg-card transition-[width] duration-200 ${
             sidebarOpen ? "w-[240px]" : "w-12"
@@ -571,6 +602,10 @@ export function Workspace() {
             initialMessages={activeMessages}
             onNewThread={createThread}
             founderProfile={founderProfile}
+            onOpenSettings={() => setSettingsOpen(true)}
+            savedIdeas={savedIdeas}
+            onSaveIdea={handleSaveIdea}
+            onUnsaveIdea={handleUnsaveIdea}
           />
         ) : (
           <div className="flex flex-1 items-center justify-center">

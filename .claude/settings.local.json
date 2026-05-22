@@ -23,7 +23,21 @@
       "Bash(node -e \"const {output} = require\\('ai'\\); console.log\\(typeof output, Object.keys\\(output || {}\\)\\)\")",
       "Bash(node -e \"const ai = require\\('ai'\\); console.log\\(Object.keys\\(ai\\).filter\\(k => k.toLowerCase\\(\\).includes\\('output'\\)\\)\\)\")",
       "Bash(node -e \"const sdk = require\\('@ai-sdk/react'\\); console.log\\(Object.keys\\(sdk\\)\\)\")",
-      "Bash(Remove-Item \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\src\\\\lib\\\\workspace\\\\thread-storage.ts\")"
+      "Bash(Remove-Item \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\src\\\\lib\\\\workspace\\\\thread-storage.ts\")",
+      "PowerShell(Select-String -Path \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\node_modules\\\\next\\\\dist\\\\server\\\\route-modules\\\\app-route\\\\module.js\" -Pattern \"HTTP_METHODS|DELETE\" | Select-Object -First 20 | ForEach-Object { $_.Line })",
+      "PowerShell(Select-String -Path \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\node_modules\\\\next\\\\dist\\\\server\\\\route-modules\\\\app-route\\\\module.js\" -Pattern \"404|not found|handler\\\\[method\\\\]|userland\" | Select-Object -First 30 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Get-Content \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\node_modules\\\\next\\\\dist\\\\server\\\\route-modules\\\\app-route\\\\module.js\" | Select-Object -Index \\(178..195\\) | ForEach-Object { $_ })",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\.next\\\\server\\\\chunks\" | Select-String -Pattern \"DELETE|deleteUser|service_role\" | Select-Object -First 10 | ForEach-Object { \"$\\($_.Filename\\): $\\($_.Line.Substring\\(0, [Math]::Min\\(150, $_.Line.Length\\)\\)\\)\" })",
+      "PowerShell(node -e \"const s = require\\('./node_modules/@supabase/supabase-js/package.json'\\); console.log\\(s.version\\)\" 2>&1)",
+      "PowerShell(node -e \"const { createClient } = require\\('./node_modules/@supabase/supabase-js'\\); const c = createClient\\('http://x.x', 'anon'\\); console.log\\(typeof c.auth.admin?.deleteUser\\)\")",
+      "PowerShell($f = \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\.next\\\\server\\\\chunks\\\\[root-of-the-server]__0xnrr6u._.js\"; $content = [System.IO.File]::ReadAllText\\($f\\); $idx = $content.IndexOf\\(\"96628\"\\); $end = $content.IndexOf\\(\"],\",$idx+10\\); if \\($end -gt $idx\\) { $snippet = $content.Substring\\($idx, [Math]::Min\\(800, $end - $idx\\)\\) } else { $snippet = $content.Substring\\($idx, 800\\) }; $snippet)",
+      "PowerShell($f = \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\.next\\\\server\\\\chunks\\\\[root-of-the-server]__0xnrr6u._.js\"; $content = [System.IO.File]::ReadAllText\\($f\\); $idx = $content.IndexOf\\(\"96628\"\\); $snippet = $content.Substring\\($idx, [Math]::Min\\(1500, $content.Length - $idx\\)\\); $snippet)",
+      "PowerShell($f = \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\.next\\\\server\\\\chunks\\\\[root-of-the-server]__0xnrr6u._.js\"; $content = [System.IO.File]::ReadAllText\\($f\\); $idx = $content.IndexOf\\(\"96628\"\\); $snippet = $content.Substring\\($idx, [Math]::Min\\(3000, $content.Length - $idx\\)\\); $snippet)",
+      "Bash(node -e \"require\\('dotenv/config'\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(grep \"src\\\\\\\\\")",
+      "Bash(findstr \"src\")",
+      "WebSearch"
     ]
   }
 }

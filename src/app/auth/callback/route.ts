@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -16,6 +16,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // If something went wrong, still send to workspace — the client will handle auth state
+  // If something went wrong, still send to workspace - the client will handle auth state
   return NextResponse.redirect(`${origin}/workspace`);
 }

@@ -1,7 +1,8 @@
-import { fetchHnCommentSignals } from "./hackernews";
+﻿import { fetchHnCommentSignals } from "./hackernews";
 import { fetchRedditSignals } from "./reddit";
 import { fetchGithubSignals } from "./github";
 import { fetchStackOverflowSignals } from "./stackoverflow";
+import { fetchProductHuntSignals } from "./producthunt";
 import type { RawDemandSnippet } from "./types";
 
 export async function gatherDemandSnippets(topic: string): Promise<{
@@ -10,14 +11,15 @@ export async function gatherDemandSnippets(topic: string): Promise<{
 }> {
   const errors: string[] = [];
 
-  const [reddit, hn, github, stackoverflow] = await Promise.all([
+  const [reddit, hn, github, stackoverflow, producthunt] = await Promise.all([
     fetchRedditSignals(topic),
     fetchHnCommentSignals(topic),
     fetchGithubSignals(topic),
     fetchStackOverflowSignals(topic),
+    fetchProductHuntSignals(topic),
   ]);
 
-  console.log(`[signals] reddit=${reddit.length} hn=${hn.length} github=${github.length} so=${stackoverflow.length}`);
+  console.log(`[signals] reddit=${reddit.length} hn=${hn.length} github=${github.length} so=${stackoverflow.length} ph=${producthunt.length}`);
 
   if (reddit.length === 0) {
     errors.push("Reddit returned no snippets (rate limit, block, or niche query).");
@@ -32,7 +34,7 @@ export async function gatherDemandSnippets(topic: string): Promise<{
     errors.push("Stack Overflow returned no results for this query.");
   }
 
-  const snippets = [...reddit, ...hn, ...github, ...stackoverflow];
+  const snippets = [...reddit, ...hn, ...github, ...stackoverflow, ...producthunt];
   const deduped = dedupeSnippets(snippets);
 
   return { snippets: deduped.slice(0, 70), errors };
@@ -65,7 +67,7 @@ export function snippetsToPromptDigest(snippets: RawDemandSnippet[]): string {
 
   return snippets
     .map((s, i) => {
-      const head = `[${i + 1}] ${s.source}${s.title ? ` — ${s.title}` : ""}${s.url ? ` (${s.url})` : ""}`;
+      const head = `[${i + 1}] ${s.source}${s.title ? ` - ${s.title}` : ""}${s.url ? ` (${s.url})` : ""}`;
       return `${head}\n${s.text}`;
     })
     .join("\n\n---\n\n");

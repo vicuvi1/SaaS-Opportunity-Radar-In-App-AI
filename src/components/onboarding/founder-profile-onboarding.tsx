@@ -1,39 +1,40 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ChipGroup } from "@/components/ui/chip-group";
 import type { FounderProfile } from "@/lib/profile/founder-profile";
 import {
   ROLE_OPTIONS,
-  MARKET_OPTIONS,
+  SKILL_OPTIONS,
+  COMMUNITY_OPTIONS,
   TECH_OPTIONS,
   GOAL_OPTIONS,
   MONETIZATION_OPTIONS,
+  BUILD_TYPE_OPTIONS,
 } from "@/lib/profile/options";
 import { ArrowRight, Rocket } from "lucide-react";
 
 const STEPS = [
   {
-    id: "role",
-    heading: "What best describes you?",
-    sub: "This helps us match ideas to how you work.",
-  },
-  {
-    id: "markets",
-    heading: "What markets do you know from the inside?",
-    sub: "Pick every space you have real knowledge of: sports fan, finance nerd, gamer, whatever. This is your unfair advantage.",
-  },
-  {
-    id: "technical",
-    heading: "How would you describe your technical ability?",
-    sub: "Honest answer = better-matched ideas.",
-  },
-  {
     id: "goals",
     heading: "What are you trying to build?",
-    sub: "And how do you want to make money from it?",
+    sub: "This shapes everything - it changes what a 'good idea' means for you.",
+  },
+  {
+    id: "skills",
+    heading: "What are you actually good at?",
+    sub: "Pick everything that applies. This determines what you can realistically build.",
+  },
+  {
+    id: "communities",
+    heading: "What communities are you already part of?",
+    sub: "Groups you're genuinely embedded in - not just interested in. This is your real distribution advantage.",
+  },
+  {
+    id: "details",
+    heading: "A few quick details",
+    sub: "All optional. Helps narrow the search.",
   },
 ] as const;
 
@@ -45,21 +46,21 @@ export function FounderProfileOnboarding({
   onSkip: () => void;
 }) {
   const [step, setStep] = useState(0);
-  const [role, setRole] = useState("");
-  const [markets, setMarkets] = useState<string[]>([]);
-  const [customMarket, setCustomMarket] = useState("");
-  const [technicalLevel, setTechnicalLevel] = useState<string[]>([]);
-  const [goal, setGoal] = useState("");
-  const [monetizationPref, setMonetizationPref] = useState("");
+  const [goal, setGoal] = useState<string[]>([]);
+  const [buildType, setBuildType] = useState<string[]>([]);
+  const [role, setRole] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [technicalLevel, setTechnicalLevel] = useState("");
+  const [communities, setCommunities] = useState<string[]>([]);
+  const [monetizationPref, setMonetizationPref] = useState<string[]>([]);
 
   const totalSteps = STEPS.length;
   const currentStep = STEPS[step];
 
   function canAdvance() {
-    if (step === 0) return !!role;
-    if (step === 1) return markets.length > 0 || customMarket.trim().length > 0;
-    if (step === 2) return technicalLevel.length > 0;
-    if (step === 3) return !!goal;
+    if (step === 0) return goal.length > 0;
+    if (step === 1) return skills.length > 0 && !!technicalLevel;
+    if (step === 2) return communities.length > 0;
     return true;
   }
 
@@ -67,16 +68,14 @@ export function FounderProfileOnboarding({
     if (step < totalSteps - 1) {
       setStep((s) => s + 1);
     } else {
-      const allInterests = [
-        ...markets,
-        ...(customMarket.trim() ? customMarket.split(",").map((s) => s.trim()).filter(Boolean) : []),
-      ];
       onComplete({
         role,
+        skills,
         technicalLevel,
-        interests: allInterests,
+        communities,
         goal,
-        monetizationPref: monetizationPref || "Not sure yet",
+        monetizationPref,
+        buildType,
         completedAt: new Date().toISOString(),
       });
     }
@@ -110,55 +109,92 @@ export function FounderProfileOnboarding({
         </div>
 
         {/* Question */}
-        <div className="px-6 py-5 space-y-4 min-h-[260px]">
+        <div className="px-6 py-5 space-y-4 min-h-[300px]">
           <div>
             <p className="text-base font-semibold text-foreground">{currentStep.heading}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{currentStep.sub}</p>
           </div>
 
           {step === 0 && (
-            <ChipGroup options={ROLE_OPTIONS} selected={role} onChange={(v) => setRole(v as string)} />
+            <div className="space-y-4">
+              <ChipGroup
+                options={GOAL_OPTIONS}
+                selected={goal}
+                multi
+                allowCustom
+                customPlaceholder="Add your own goal..."
+                onChange={(v) => setGoal(v as string[])}
+              />
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-muted-foreground">What type of business? <span className="font-normal text-muted-foreground/50">(optional)</span></p>
+                <ChipGroup
+                  options={BUILD_TYPE_OPTIONS}
+                  selected={buildType}
+                  multi
+                  onChange={(v) => setBuildType(v as string[])}
+                />
+              </div>
+            </div>
           )}
 
           {step === 1 && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <ChipGroup
-                options={MARKET_OPTIONS}
-                selected={markets}
+                options={SKILL_OPTIONS}
+                selected={skills}
                 multi
-                onChange={(v) => setMarkets(v as string[])}
+                allowCustom
+                searchable
+                searchPlaceholder="Search skills (e.g. marketing, data analysis)..."
+                customPlaceholder="Add a skill..."
+                onChange={(v) => setSkills(v as string[])}
               />
-              <Input
-                placeholder="Add your own (comma-separated, e.g. poker, legal tech)"
-                value={customMarket}
-                onChange={(e) => setCustomMarket(e.target.value)}
-                className="border-border/60 bg-background/60 text-sm h-9"
-              />
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-muted-foreground">Technical ability</p>
+                <ChipGroup
+                  options={TECH_OPTIONS}
+                  selected={technicalLevel}
+                  onChange={(v) => setTechnicalLevel(v as string)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-muted-foreground">Role <span className="font-normal text-muted-foreground/50">(optional)</span></p>
+                <ChipGroup
+                  options={ROLE_OPTIONS}
+                  selected={role}
+                  multi
+                  allowCustom
+                  customPlaceholder="Add your own role..."
+                  onChange={(v) => setRole(v as string[])}
+                />
+              </div>
             </div>
           )}
 
           {step === 2 && (
             <ChipGroup
-              options={TECH_OPTIONS}
-              selected={technicalLevel}
+              options={COMMUNITY_OPTIONS}
+              selected={communities}
               multi
-              onChange={(v) => setTechnicalLevel(v as string[])}
+              allowCustom
+              searchable
+              searchPlaceholder="Search communities (e.g. poker players, gym owners)..."
+              customPlaceholder="Add a community..."
+              onChange={(v) => setCommunities(v as string[])}
             />
           )}
 
           {step === 3 && (
             <div className="space-y-4">
-              <ChipGroup
-                options={GOAL_OPTIONS}
-                selected={goal}
-                onChange={(v) => setGoal(v as string)}
-              />
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground">How do you want to make money?</p>
+                <p className="text-xs font-semibold text-muted-foreground">How do you want to make money? <span className="font-normal text-muted-foreground/60">(optional)</span></p>
                 <ChipGroup
                   options={MONETIZATION_OPTIONS}
                   selected={monetizationPref}
-                  onChange={(v) => setMonetizationPref(v as string)}
+                  multi
+                  allowCustom
+                  customPlaceholder="Add a monetization model..."
+                  onChange={(v) => setMonetizationPref(v as string[])}
                 />
               </div>
             </div>

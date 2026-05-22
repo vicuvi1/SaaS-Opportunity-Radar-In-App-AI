@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+﻿import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ForgeThread } from "@/lib/workspace/types";
 import type { StorageProvider, StoredMessage } from "./types";
 
@@ -51,7 +51,7 @@ export function createSupabaseProvider(
         { onConflict: "id" },
       );
       if (threadError) {
-        // Log but do NOT return — the thread may already exist in Supabase from
+        // Log but do NOT return - the thread may already exist in Supabase from
         // a previous call that timed out on the client side. Always attempt to
         // save the report even if this upsert reports an error.
         console.error("[storage] thread upsert error (continuing):", threadError.message, threadError.code);
@@ -106,7 +106,7 @@ export function createSupabaseProvider(
 
     async saveMessages(threadId, messages) {
       const trimmed = messages.slice(-MESSAGE_CAP);
-      // Upsert a single row — one row per thread, whole conversation in jsonb.
+      // Upsert a single row - one row per thread, whole conversation in jsonb.
       const { error } = await supabase
         .from("thread_messages")
         .upsert(
@@ -114,7 +114,7 @@ export function createSupabaseProvider(
             thread_id: threadId,
             user_id: userId,
             messages: trimmed.map((m) => ({
-              id: m.id,          // stored in json, not a DB uuid column — fine
+              id: m.id,          // stored in json, not a DB uuid column - fine
               role: m.role,
               content: m.content,
               created_at: new Date(m.createdAt).toISOString(),

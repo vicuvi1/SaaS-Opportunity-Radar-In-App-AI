@@ -1,6 +1,6 @@
 import { streamText, Output } from "ai";
-import { getLanguageModel } from "@/lib/ai/model";
-import { DISCOVER_SYSTEM, buildDiscoverPrompt } from "@/lib/ai/prompts";
+import { anthropic } from "@ai-sdk/anthropic";
+import { DISCOVER_SYSTEM_LEAN, buildDiscoverPrompt } from "@/lib/ai/prompts";
 import { ideaDiscoverySchema } from "@/lib/schemas/idea-discovery";
 
 export const maxDuration = 60;
@@ -19,18 +19,10 @@ export async function POST(req: Request) {
       return Response.json({ error: "Provide a niche or complete your founder profile." }, { status: 400 });
     }
 
-    let model;
-    try {
-      model = getLanguageModel();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Model configuration error.";
-      return Response.json({ error: msg }, { status: 503 });
-    }
-
     const result = streamText({
-      model,
+      model: anthropic("claude-sonnet-4-6"),
       output: Output.object({ schema: ideaDiscoverySchema }),
-      system: DISCOVER_SYSTEM,
+      system: DISCOVER_SYSTEM_LEAN,
       prompt: buildDiscoverPrompt({ niche, founderProfileText }),
       temperature: 1,
     });

@@ -1,11 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type FounderProfile = {
-  role: string;
-  technicalLevel: string[];
-  interests: string[];
-  goal: string;
-  monetizationPref: string;
+  role: string[];
+  skills: string[];
+  technicalLevel: string;
+  communities: string[];
+  goal: string[];
+  monetizationPref: string[];
+  buildType: string[];
+  additionalContext?: string;
   completedAt: string;
 };
 
@@ -24,11 +27,15 @@ function toFirstString(val: unknown): string {
 function normalizeProfile(raw: unknown): FounderProfile {
   const p = raw as Record<string, unknown>;
   return {
-    role: toFirstString(p.role),
-    technicalLevel: toStringArray(p.technicalLevel),
-    interests: Array.isArray(p.interests) ? (p.interests as string[]) : [],
-    goal: toFirstString(p.goal),
-    monetizationPref: toFirstString(p.monetizationPref),
+    role: toStringArray(p.role),
+    skills: toStringArray(p.skills),
+    technicalLevel: toFirstString(p.technicalLevel),
+    communities: Array.isArray(p.communities) ? (p.communities as string[]) :
+                 Array.isArray(p.interests) ? (p.interests as string[]) : [],
+    goal: toStringArray(p.goal),
+    monetizationPref: toStringArray(p.monetizationPref),
+    buildType: toStringArray(p.buildType),
+    additionalContext: typeof p.additionalContext === "string" ? p.additionalContext : undefined,
     completedAt: typeof p.completedAt === "string" ? p.completedAt : new Date().toISOString(),
   };
 }
@@ -59,10 +66,13 @@ export async function saveFounderProfile(
 
 export function founderProfileToText(profile: FounderProfile): string {
   const parts: string[] = [];
-  if (profile.role) parts.push(`Role: ${profile.role}`);
-  if (profile.technicalLevel?.length) parts.push(`Technical level: ${profile.technicalLevel.join(", ")}`);
-  if (profile.interests?.length) parts.push(`Markets / interests: ${profile.interests.join(", ")}`);
-  if (profile.goal) parts.push(`Goal: ${profile.goal}`);
-  if (profile.monetizationPref) parts.push(`Monetization preference: ${profile.monetizationPref}`);
+  if (profile.role?.length) parts.push(`Role: ${profile.role.join(", ")}`);
+  if (profile.skills?.length) parts.push(`Skills / expertise: ${profile.skills.join(", ")}`);
+  if (profile.technicalLevel) parts.push(`Technical level: ${profile.technicalLevel}`);
+  if (profile.communities?.length) parts.push(`Communities / networks I have access to: ${profile.communities.join(", ")}`);
+  if (profile.goal?.length) parts.push(`Goal: ${profile.goal.join(", ")}`);
+  if (profile.monetizationPref?.length) parts.push(`Monetization preference: ${profile.monetizationPref.join(", ")}`);
+  if (profile.buildType?.length) parts.push(`Preferred business type: ${profile.buildType.join(", ")}`);
+  if (profile.additionalContext?.trim()) parts.push(`Workflow frustrations / context: ${profile.additionalContext.trim()}`);
   return parts.join("\n");
 }

@@ -354,7 +354,7 @@ function buildReport(all: Result[], totalMs: number): string {
     caseBlocks.push(``);
   }
 
-  const perModel: string[] = [
+  const perModel: string = [
     `## Per-model Detail`,
     ``,
     `### gpt-4o`,

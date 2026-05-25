@@ -46,7 +46,8 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 4 http://localhost:3000)",
       "Bash(node -e \"const zod = require\\('zod'\\); console.log\\(zod.version || 'no version field'\\)\")",
       "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('zod:', p.dependencies.zod\\)\")",
-      "Bash(del \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\scripts\\\\test-finisher-rerun.ts\")"
+      "Bash(del \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\scripts\\\\test-finisher-rerun.ts\")",
+      "Bash(Remove-Item \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\src\\\\middleware.ts\")"
     ]
   }
 }

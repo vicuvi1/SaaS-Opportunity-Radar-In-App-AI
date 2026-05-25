@@ -13,7 +13,7 @@ export function createSupabaseProvider(
     async loadThreads() {
       const { data, error } = await supabase
         .from("threads")
-        .select("*, idea_reports(payload, updated_at)")
+        .select("*, idea_reports(payload, updated_at), discovery_results(payload, updated_at)")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false });
 
@@ -23,6 +23,9 @@ export function createSupabaseProvider(
         const reportRow = Array.isArray(row.idea_reports)
           ? row.idea_reports[0]
           : row.idea_reports;
+        const discoveryRow = Array.isArray(row.discovery_results)
+          ? row.discovery_results[0]
+          : row.discovery_results;
         return {
           id: row.id as string,
           title: row.title as string,
@@ -32,6 +35,7 @@ export function createSupabaseProvider(
           favorite: row.favorite as boolean,
           updatedAt: new Date(row.updated_at as string).getTime(),
           report: reportRow?.payload ?? null,
+          discoveryResult: discoveryRow?.payload ?? null,
         } satisfies ForgeThread;
       });
     },
@@ -71,6 +75,23 @@ export function createSupabaseProvider(
           );
         if (reportError) {
           console.error("[storage] report upsert error:", reportError.message, reportError.code, "| thread:", thread.id);
+        }
+      }
+
+      if (thread.discoveryResult) {
+        const { error: discoveryError } = await supabase
+          .from("discovery_results")
+          .upsert(
+            {
+              thread_id: thread.id,
+              user_id: userId,
+              payload: thread.discoveryResult,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "thread_id" },
+          );
+        if (discoveryError) {
+          console.error("[storage] discovery upsert error:", discoveryError.message, discoveryError.code, "| thread:", thread.id);
         }
       }
     },

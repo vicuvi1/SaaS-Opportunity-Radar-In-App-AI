@@ -2,11 +2,21 @@ import { streamText, Output } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { DISCOVER_SYSTEM_LEAN, buildDiscoverPrompt } from "@/lib/ai/prompts";
 import { ideaDiscoverySchema } from "@/lib/schemas/idea-discovery";
+import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    if (!supabase) {
+      return Response.json({ error: "Auth not configured." }, { status: 503 });
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Authentication required." }, { status: 401 });
+    }
+
     const body = (await req.json()) as {
       niche?: string;
       founderProfileText?: string;

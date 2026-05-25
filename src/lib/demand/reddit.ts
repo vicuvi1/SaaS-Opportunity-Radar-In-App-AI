@@ -1,7 +1,6 @@
 import type { RawDemandSnippet } from "./types";
 
-const UA =
-  "IdeaForge/1.0 (+https://ideaforge.local; startup validation research bot)";
+const UA = `FounderHQ/1.0 (+${process.env.NEXT_PUBLIC_URL ?? "https://founderhq.app"}; startup validation research bot)`;
 
 export async function fetchRedditSignals(query: string): Promise<RawDemandSnippet[]> {
   const q = encodeURIComponent(query.trim());

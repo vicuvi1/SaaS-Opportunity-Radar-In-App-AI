@@ -11,6 +11,7 @@ import {
   createSupabaseProvider,
   type StorageProvider,
 } from "@/lib/storage";
+import Image from "next/image";
 import { SignInCard, SignInDialog } from "@/components/auth/sign-in-sheet";
 import { IdeaStudio } from "@/components/workspace/idea-studio";
 import { ReportPanel } from "@/components/workspace/report-panel";
@@ -40,7 +41,6 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  LayoutPanelLeft,
   Loader2,
   PanelRight,
   Plus,
@@ -379,8 +379,7 @@ export function Workspace() {
     return (
       <div className="noise-overlay subtle-grid relative flex h-[100dvh] flex-col items-center justify-center bg-background text-foreground">
         <div className="mb-8 text-center">
-          <p className="text-2xl font-bold tracking-tight">IdeaForge</p>
-          <p className="mt-1 text-sm text-muted-foreground">Validate demand before you ship.</p>
+          <Image src="/brand/logo/logo-stacked-white.png" alt="FounderHQ" width={120} height={80} />
         </div>
         <div className="w-full max-w-sm px-4">
           <SignInCard />
@@ -404,14 +403,10 @@ export function Workspace() {
       )}
       <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <LayoutPanelLeft className="size-5 shrink-0 text-muted-foreground" />
+          <Image src="/brand/mark/mark-white.png" alt="FounderHQ" width={56} height={56} className="shrink-0" />
           <div className="min-w-0">
-            <p className="truncate text-base font-semibold tracking-tight">
-              IdeaForge
-            </p>
-            <p className="truncate text-[11px] text-muted-foreground/90">
-              Validate demand before you ship.
-            </p>
+            <p className="truncate text-sm font-semibold tracking-tight">FounderHQ</p>
+            <p className="truncate text-[11px] text-muted-foreground/90">Do your homework before you ship.</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

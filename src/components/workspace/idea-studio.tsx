@@ -9,11 +9,11 @@ import {
 } from "ai";
 import { ideaReportSchema, type IdeaReport } from "@/lib/schemas/idea-report";
 import { ideaDiscoverySchema, type DiscoveryIdea, type IdeaDiscovery } from "@/lib/schemas/idea-discovery";
-import { ideaFinisherSchema } from "@/lib/schemas/idea-finisher";
+import { z } from "zod";
 import { founderProfileToText, type FounderProfile } from "@/lib/profile/founder-profile";
 import type { ForgeThread } from "@/lib/workspace/types";
 import { ReportPanel } from "@/components/workspace/report-panel";
-import { FinisherBlueprint } from "@/components/workspace/finisher-blueprint";
+import { FinisherBlueprint, GoalSelector } from "@/components/workspace/finisher-blueprint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,13 +67,13 @@ const CREATE_CAP = 6;
 
 const CHAT_META: Record<Mode, { title: string; description: string; placeholder: string; emptyState: string }> = {
   create: {
-    title: "Brainstorm with IdeaForge",
+    title: "Brainstorm with FounderHQ",
     description: "Tell me about your skills, interests, or a market you want to explore. I'll help you find startup ideas worth pursuing.",
     placeholder: "e.g. I know poker and AI. What SaaS could I build? Or: I want problems worth solving in healthcare…",
     emptyState: "Tell me about your background, skills, or what markets excite you. I'll help surface startup ideas tailored to you.",
   },
   validate: {
-    title: "Ask IdeaForge",
+    title: "Ask FounderHQ",
     description: "Ask questions about the report, challenge assumptions, or think through your first steps.",
     placeholder: "Ask about the report, validation steps, how to start…",
     emptyState: "Got a question about the report? Want to dig into a specific signal, challenge an assumption, or think through how to actually start? Ask anything.",
@@ -119,8 +119,8 @@ export function IdeaStudio({
   onSaveIdea?: (idea: Omit<SavedIdea, "id" | "savedAt">) => void;
   onUnsaveIdea?: (id: string) => void;
 }) {
-  const [mode, setMode] = useState<Mode>("validate");
-  const modeRef = useRef<Mode>("validate");
+  const [mode, setMode] = useState<Mode>("create");
+  const modeRef = useRef<Mode>("create");
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
@@ -132,14 +132,21 @@ export function IdeaStudio({
   const [topic, setTopic] = useState(thread.topic);
   const [founder, setFounder] = useState(thread.founderProfile);
   const [niche, setNiche] = useState("");
+  const [planGoal, setPlanGoal] = useState<string>("");
   const [refineInput, setRefineInput] = useState("");
   const [formCollapsed, setFormCollapsed] = useState(!!thread.report);
+  const [finishDismissedValidated, setFinishDismissedValidated] = useState(false);
+  const [finishCustomTopic, setFinishCustomTopic] = useState("");
   const [chatWidth, setChatWidth] = useState(360);
   const dragState = useRef<{ startX: number; startWidth: number } | null>(null);
 
   useEffect(() => {
     setChatWidth(CHAT_DEFAULT_WIDTHS[mode]);
     if (mode !== "create") setSelectedDiscoveryIdea(null);
+    if (mode === "finish") {
+      setFinishDismissedValidated(false);
+      setFinishCustomTopic("");
+    }
   }, [mode]);
 
   const onResizeStart = useCallback((e: React.MouseEvent) => {
@@ -241,6 +248,12 @@ export function IdeaStudio({
   } = useObject({
     api: "/api/discover",
     schema: ideaDiscoverySchema,
+    initialValue: thread.discoveryResult ?? undefined,
+    onFinish: ({ object: finished }: { object: IdeaDiscovery | undefined; error: unknown }) => {
+      if (finished) {
+        onPatch({ discoveryResult: finished, updatedAt: Date.now() });
+      }
+    },
   });
 
   const {
@@ -250,7 +263,7 @@ export function IdeaStudio({
     clear: clearBlueprint,
   } = useObject({
     api: "/api/finish",
-    schema: ideaFinisherSchema,
+    schema: z.record(z.string(), z.unknown()),
   });
 
   useEffect(() => {
@@ -292,17 +305,25 @@ export function IdeaStudio({
     });
   }, [niche, founderProfile, submitDiscover, clearDiscover]);
 
+  const activeReport = report ?? (thread.report ? thread.report : undefined);
+
   const runFinisher = useCallback(() => {
-    const t = (topic.trim() || thread.topic).trim();
+    if (!planGoal) return;
+    const validatedReport = report ?? thread.report;
+    const useValidated = !!validatedReport && !finishDismissedValidated;
+    const t = useValidated
+      ? (topic.trim() || thread.topic || (validatedReport as { title?: string })?.title || "").trim()
+      : finishCustomTopic.trim();
     if (!t) return;
     const profileText = founderProfile ? founderProfileToText(founderProfile) : founder.trim();
     clearBlueprint();
     submitFinisher({
       topic: t,
       founderProfile: profileText || undefined,
-      report: thread.report ?? undefined,
+      report: useValidated ? (thread.report ?? undefined) : undefined,
+      planGoal: planGoal || undefined,
     });
-  }, [topic, founder, founderProfile, thread, submitFinisher, clearBlueprint]);
+  }, [topic, founder, founderProfile, thread, report, finishDismissedValidated, finishCustomTopic, planGoal, submitFinisher, clearBlueprint]);
 
   const validateIdea = useCallback((idea: DiscoveryIdea) => {
     setMode("validate");
@@ -338,7 +359,6 @@ export function IdeaStudio({
   const effectiveCap = mode === "create" ? CREATE_CAP : MESSAGE_CAP;
   const atCap = userMessageCount >= effectiveCap;
   const chatMeta = CHAT_META[mode];
-  const activeReport = report ?? (thread.report ? thread.report : undefined);
 
   return (
     <div className="flex min-h-0 flex-1 overflow-x-hidden">
@@ -360,7 +380,7 @@ export function IdeaStudio({
               }`}
             >
               <Sparkles className="size-3.5" />
-              Create / Find
+              Discover
             </button>
             <button
               type="button"
@@ -372,7 +392,7 @@ export function IdeaStudio({
               }`}
             >
               <Target className="size-3.5" />
-              Validate Idea
+              Validate
             </button>
             <button
               type="button"
@@ -390,7 +410,7 @@ export function IdeaStudio({
               }`}
             >
               <Rocket className="size-3.5" />
-              Idea Finisher
+              Launch Plan
             </button>
           </div>
 
@@ -403,7 +423,7 @@ export function IdeaStudio({
                   <DialogTitle>No validated idea yet</DialogTitle>
                 </div>
                 <DialogDescription>
-                  The Idea Finisher builds your full startup blueprint. Without validation, it has no real market evidence to work from - the blueprint will be based on assumptions rather than real Reddit, HN, and GitHub signals.
+                  Launch Plan builds your full startup blueprint. Without validation, it has no real market evidence to work from - the blueprint will be based on assumptions rather than real Reddit, HN, and GitHub signals.
                   <br /><br />
                   We strongly recommend running a validation first. It only takes a minute.
                 </DialogDescription>
@@ -723,85 +743,129 @@ export function IdeaStudio({
 
           {/* FINISH mode bar */}
           {mode === "finish" && (
-            activeReport ? (
-              /* Compact bar - validated idea ready */
-              <div className="flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{activeReport.title || topic}</p>
-                  {typeof activeReport.validationQuality?.buildGateScore === "number" && (
-                    <p className="text-[11px] text-muted-foreground">
-                      Validated:{" "}
-                      <span className={`font-semibold ${
+            activeReport && !finishDismissedValidated ? (
+              /* Validated idea pre-selected as dismissible chip */
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] text-muted-foreground/60 shrink-0">Generating plan for:</span>
+                  <div className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/[0.08] pl-3 pr-1.5 py-1 min-w-0">
+                    <span className="truncate text-xs font-medium text-foreground max-w-[280px]">
+                      {activeReport.title || topic}
+                    </span>
+                    {typeof activeReport.validationQuality?.buildGateScore === "number" && (
+                      <span className={`shrink-0 text-[10px] font-semibold ${
                         activeReport.validationQuality.buildGateScore >= 65 ? "text-emerald-400" :
                         activeReport.validationQuality.buildGateScore >= 40 ? "text-amber-400" : "text-red-400"
                       }`}>
                         {activeReport.validationQuality.buildGateScore}/100
                       </span>
-                    </p>
+                    )}
+                    <button
+                      type="button"
+                      aria-label="Use a different idea"
+                      onClick={() => setFinishDismissedValidated(true)}
+                      className="shrink-0 rounded-full p-0.5 text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                </div>
+                <GoalSelector value={planGoal} onChange={setPlanGoal} />
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button" size="sm"
+                      disabled={generating || !planGoal}
+                      onClick={runFinisher}
+                      className="gap-1.5 shadow-md shadow-primary/20"
+                    >
+                      {generating
+                        ? <Loader2 className="size-3.5 animate-spin" />
+                        : <Rocket className="size-3.5" />
+                      }
+                      {generating ? "Generating…" : blueprint ? "Regenerate" : "Generate Blueprint"}
+                    </Button>
+                    <Button
+                      type="button" size="sm" variant="ghost"
+                      className="gap-1.5 text-xs text-muted-foreground"
+                      onClick={resetSession}
+                    >
+                      <RotateCcw className="size-3.5" />
+                      Reset
+                    </Button>
+                  </div>
+                  {!planGoal && !generating && (
+                    <p className="text-[11px] text-amber-400/80">Select a goal above to continue.</p>
                   )}
                 </div>
-                <Button
-                  type="button" size="sm" variant="ghost"
-                  className="shrink-0 gap-1.5 text-xs text-muted-foreground"
-                  onClick={resetSession}
-                >
-                  <RotateCcw className="size-3.5" />
-                  Reset
-                </Button>
-                <Button
-                  type="button" size="sm"
-                  disabled={generating}
-                  onClick={runFinisher}
-                  className="shrink-0 gap-1.5"
-                >
-                  {generating
-                    ? <Loader2 className="size-3.5 animate-spin" />
-                    : <Rocket className="size-3.5" />
-                  }
-                  {blueprint ? "Regenerate" : "Generate Blueprint"}
-                </Button>
               </div>
             ) : (
-              /* Expanded form - user entered without validating */
+              /* No validated idea, or user dismissed chip - show manual input */
               <div className="flex flex-col gap-3">
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="finish-topic">Your idea</Label>
-                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-                      No validation
-                    </span>
+                    {!activeReport && (
+                      <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                        No validation
+                      </span>
+                    )}
                   </div>
                   <Input
                     id="finish-topic"
                     placeholder='e.g. "A tool that helps restaurant owners manage reservations without expensive software"'
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
+                    value={finishCustomTopic}
+                    onChange={(e) => setFinishCustomTopic(e.target.value)}
+                    autoFocus
                   />
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={generating || !topic.trim()}
-                    onClick={runFinisher}
-                    className="gap-2 shadow-md shadow-primary/20"
-                  >
-                    {generating
-                      ? <Loader2 className="size-3.5 animate-spin" />
-                      : <Rocket className="size-3.5" />
-                    }
-                    {generating ? "Generating…" : "Generate Blueprint"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="gap-1.5 text-muted-foreground"
-                    onClick={() => setMode("validate")}
-                  >
-                    <Target className="size-3.5" />
-                    Validate instead
-                  </Button>
+                <GoalSelector value={planGoal} onChange={setPlanGoal} />
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={generating || !finishCustomTopic.trim() || !planGoal}
+                      onClick={runFinisher}
+                      className="gap-2 shadow-md shadow-primary/20"
+                    >
+                      {generating
+                        ? <Loader2 className="size-3.5 animate-spin" />
+                        : <Rocket className="size-3.5" />
+                      }
+                      {generating ? "Generating…" : "Generate Blueprint"}
+                    </Button>
+                    {!activeReport && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 text-muted-foreground"
+                        onClick={() => setMode("validate")}
+                      >
+                        <Target className="size-3.5" />
+                        Validate instead
+                      </Button>
+                    )}
+                    {activeReport && finishDismissedValidated && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+                        onClick={() => {
+                          setFinishDismissedValidated(false);
+                          setFinishCustomTopic("");
+                        }}
+                      >
+                        <Target className="size-3.5" />
+                        Use validated idea
+                      </Button>
+                    )}
+                  </div>
+                  {!planGoal && !generating && (
+                    <p className="text-[11px] text-amber-400/80">Select a goal above to continue.</p>
+                  )}
                 </div>
               </div>
             )
@@ -831,8 +895,20 @@ export function IdeaStudio({
               generating={generating}
               onGenerate={runFinisher}
               onRegenerate={runFinisher}
-              canGenerate={!!(activeReport?.title || topic.trim() || thread.topic)}
-              ideaTitle={activeReport?.title || topic || thread.topic}
+              canGenerate={
+                !!planGoal && (
+                  activeReport && !finishDismissedValidated
+                    ? !!(activeReport.title || topic.trim() || thread.topic)
+                    : !!finishCustomTopic.trim()
+                )
+              }
+              ideaTitle={
+                activeReport && !finishDismissedValidated
+                  ? (activeReport.title || topic || thread.topic)
+                  : finishCustomTopic
+              }
+              planGoal={planGoal}
+              onGoalChange={setPlanGoal}
             />
           )}
         </div>
@@ -891,7 +967,7 @@ export function IdeaStudio({
                 }`}
               >
                 <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {m.role === "user" ? "You" : "IdeaForge"}
+                  {m.role === "user" ? "You" : "FounderHQ"}
                 </p>
                 <div className="prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:leading-relaxed [&_p]:mb-2 [&_ul]:my-2 [&_ul]:pl-4 [&_ol]:my-2 [&_ol]:pl-4 [&_li]:my-1 [&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-3 [&_h1]:mb-1 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_strong]:font-semibold">
                   <ReactMarkdown>{textFromMessage(m)}</ReactMarkdown>

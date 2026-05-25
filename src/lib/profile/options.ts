@@ -370,7 +370,6 @@ export const COMMUNITY_OPTIONS = [
   "Mortgage brokers / loan officers",
   "Property managers",
   "Title agents / escrow officers",
-  "Corporate trainers",
   "Life coaches",
   "Career coaches",
   "Executive coaches",
@@ -538,6 +537,37 @@ export const COMMUNITY_OPTIONS = [
   "Middle Eastern communities",
   "Native American communities",
   "Rural communities",
+  // ── Age & Generation ─────────────────────────────────────────────────────
+  "Teenagers (13-17)",
+  "College-age adults (18-24)",
+  "Gen Z (born 1997-2012)",
+  "Millennials (born 1981-1996)",
+  "Gen X (born 1965-1980)",
+  "Boomers (born 1946-1964)",
+  "Seniors 65+",
+  // ── Gender & Identity ────────────────────────────────────────────────────
+  "Women in tech",
+  "Women founders / female entrepreneurs",
+  "Women in business",
+  "Dads / fatherhood communities",
+  "LGBTQ+ founders / entrepreneurs",
+  // ── Crafts & Making ──────────────────────────────────────────────────────
+  "Sewing / quilting",
+  "Pottery / ceramics",
+  "Woodworking / woodcraft",
+  "Embroidery / needlepoint",
+  "Candle making / soap making",
+  "Jewelry making / metalsmithing",
+  "Leather working",
+  "Scrapbooking / paper crafts",
+  "3D printing enthusiasts",
+  "DIY electronics / Arduino / Raspberry Pi",
+  "Model building / scale models",
+  "Cosplay / prop making",
+  "Resin art",
+  "Macrame / fiber arts",
+  "Painting / watercolor / oil painting",
+  "Screen printing / printmaking",
 ];
 
 export const TECH_OPTIONS = [
@@ -549,9 +579,11 @@ export const TECH_OPTIONS = [
 ];
 
 export const GOAL_OPTIONS = [
-  "Build a profitable side project",
-  "Launch a funded startup",
-  "Build something fun / learn",
+  "Fun side project",
+  "Profitable side project",
+  "Bootstrapped small business",
+  "Funded startup",
+  "Building a full company",
   "Still figuring it out",
 ];
 

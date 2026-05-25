@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Search, X } from "lucide-react";
+import { Check, Plus, Search, X } from "lucide-react";
 
 function PresetChip({
   label,
@@ -135,9 +135,25 @@ export function ChipGroup({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (showAdd) { addCustom(query); setQuery(""); }
+              }
+            }}
             placeholder={searchPlaceholder}
-            className="h-8 w-full rounded-lg border border-border/50 bg-background/60 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
+            className={`h-8 w-full rounded-lg border border-border/50 bg-background/60 pl-8 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 ${showAdd ? "pr-16" : "pr-3"}`}
           />
+          {showAdd && (
+            <button
+              type="button"
+              onClick={() => { addCustom(query); setQuery(""); }}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
+            >
+              <Plus className="size-3" />
+              Add
+            </button>
+          )}
         </div>
 
         {/* Options list */}

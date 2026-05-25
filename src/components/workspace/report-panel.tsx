@@ -234,8 +234,8 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
             </p>
             <p className="text-[11px] text-muted-foreground">
               {score >= 40
-                ? "Head to Idea Finisher to define positioning, MVP, GTM, and turn this into a real business plan."
-                : "Idea Finisher can help you explore pivots and repositioning before you commit further."}
+                ? "Head to Launch Plan to define positioning, MVP, GTM, and turn this into a real business plan."
+                : "Launch Plan can help you explore pivots and repositioning before you commit further."}
             </p>
             <Button
               type="button"
@@ -245,7 +245,7 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
               onClick={onSwitchToFinisher}
             >
               <Rocket className="size-3.5" />
-              Open Idea Finisher
+              Open Launch Plan
             </Button>
           </section>
         )}

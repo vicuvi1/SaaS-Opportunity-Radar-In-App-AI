@@ -5,6 +5,7 @@ import {
 } from "ai";
 import { getLanguageModel } from "@/lib/ai/model";
 import { CREATOR_SYSTEM, FINISHER_SYSTEM, REFINER_SYSTEM } from "@/lib/ai/prompts";
+import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 120;
 
@@ -19,6 +20,15 @@ type ChatBody = {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    if (!supabase) {
+      return Response.json({ error: "Auth not configured." }, { status: 503 });
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Authentication required." }, { status: 401 });
+    }
+
     const body = (await req.json()) as ChatBody;
     const messages = body.messages ?? [];
 

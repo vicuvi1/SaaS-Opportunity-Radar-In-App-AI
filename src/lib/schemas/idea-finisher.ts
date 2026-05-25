@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 // ── Shared sub-schemas ────────────────────────────────────────────────────────
 
@@ -27,16 +27,9 @@ export const finisherPainClusterSchema = z.object({
   opportunityHypothesis: z.string(),
 });
 
-// ── Comprehensive finisher schema ────────────────────────────────────────────
-// Contains everything needed to turn a validated idea into a real startup:
-// 1. Strategic blueprint  (new - defines what to build)
-// 2. Market research      (deep evidence - pain, demand, signals)
-// 3. Market context       (size, trends, competition)
-// 4. Execution materials  (build artifacts, launch copy, founder fit)
+// ── Shared building blocks ────────────────────────────────────────────────────
 
-export const ideaFinisherSchema = z.object({
-
-  // ── 1. STRATEGIC BLUEPRINT ──────────────────────────────────────────
+const coreBlueprint = {
   positioning: z.string(),
   targetUser: z.object({
     primary: z.string(),
@@ -62,16 +55,15 @@ export const ideaFinisherSchema = z.object({
   }),
   gtmSteps: z.array(z.string()),
   buildOrder: z.array(z.string()),
-  executionRisks: z.array(z.object({
-    risk: z.string(),
-    mitigation: z.string(),
-  })),
+  executionRisks: z.array(z.object({ risk: z.string(), mitigation: z.string() })),
+};
 
-  // ── 2. MARKET RESEARCH ─────────────────────────────────────────────
+const marketResearch = {
   painClusters: z.array(finisherPainClusterSchema),
   demandSignalsSummary: z.array(finisherDemandSignalSchema),
+};
 
-  // ── 3. MARKET CONTEXT ──────────────────────────────────────────────
+const marketContext = {
   problemAnalysis: z.object({
     customerPain: z.string(),
     whoExperiences: z.string(),
@@ -87,8 +79,9 @@ export const ideaFinisherSchema = z.object({
     competitorDensity: z.string(),
   }),
   competitors: z.array(finisherCompetitorSchema),
+};
 
-  // ── 4. EXECUTION MATERIALS ─────────────────────────────────────────
+const executionMaterials = {
   opportunityWedge: z.object({
     underservedAudience: z.string(),
     ignoredWorkflow: z.string(),
@@ -104,9 +97,7 @@ export const ideaFinisherSchema = z.object({
     technicalComplexity: z.string(),
   }),
   buildArtifacts: z.object({
-    lovablePrompt: z.string(),
-    v0Prompt: z.string(),
-    cursorPrompt: z.string(),
+    buildPrompt: z.string(),
     mvpFeatures: z.array(z.string()),
     dbSchema: z.string(),
     architecture: z.string(),
@@ -125,6 +116,224 @@ export const ideaFinisherSchema = z.object({
     coldOutreachScript: z.string(),
     communityPlan: z.string(),
   }),
+};
+
+// ── Tier 1: LEAN (Fun side project) ──────────────────────────────────────────
+// No market research. Simple financials. Ship fast.
+
+export const leanFinisherSchema = z.object({
+  ...coreBlueprint,
+  founderFit: executionMaterials.founderFit,
+  buildArtifacts: executionMaterials.buildArtifacts,
+  validationPack: executionMaterials.validationPack,
+  financialPlan: z.object({
+    weeklyHours: z.string(),
+    earningsCeiling: z.string(),
+    launchCost: z.string(),
+    firstRevenueTimeline: z.string(),
+    keyAssumptions: z.array(z.string()),
+  }),
+  launchMilestones: z.object({
+    week1: z.array(z.string()),
+    month1: z.array(z.string()),
+    month3: z.array(z.string()),
+    successMetrics: z.array(z.string()),
+    biggestChallenges: z.array(z.string()),
+  }),
+});
+
+// ── Tier 2: INDIE (Profitable side project) ───────────────────────────────────
+// Full market research + SBA-style business plan depth calibrated for bootstrappers
+
+export const indieFinisherSchema = z.object({
+  ...coreBlueprint,
+  ...marketResearch,
+  ...marketContext,
+  ...executionMaterials,
+  // SBA-inspired business plan sections
+  executiveSummary: z.object({
+    businessDescription: z.string(),
+    missionStatement: z.string(),
+    problemStatement: z.string(),
+    solutionStatement: z.string(),
+    uniqueValueProposition: z.string(),
+    companyAdvantages: z.array(z.string()),
+    keySuccessFactors: z.array(z.string()),
+  }),
+  customerProfile: z.object({
+    description: z.string(),
+    demographics: z.string(),
+    buyingBehavior: z.string(),
+    whyTheyBuy: z.string(),
+  }),
+  industryContext: z.object({
+    industry: z.string(),
+    trends: z.string(),
+    marketSize: z.string(),
+    companyAdvantages: z.array(z.string()),
+  }),
+  pricingStructure: z.object({
+    tiers: z.array(z.object({
+      name: z.string(),
+      price: z.string(),
+      includes: z.array(z.string()),
+    })),
+    rationale: z.string(),
+  }),
+  marketingAndSales: z.object({
+    growthStrategy: z.array(z.string()),
+    communicationChannels: z.array(z.string()),
+    howToSell: z.string(),
+  }),
+  financialPlan: z.object({
+    revenueModel: z.string(),
+    pricingStrategy: z.string(),
+    monthlyBreakeven: z.string(),
+    projectedRevenue3Month: z.string(),
+    projectedRevenue6Month: z.string(),
+    startupCosts: z.string(),
+    fundingNeeds: z.string(),
+    keyAssumptions: z.array(z.string()),
+  }),
+  launchMilestones: z.object({
+    week1: z.array(z.string()),
+    month1: z.array(z.string()),
+    month3: z.array(z.string()),
+    month6: z.array(z.string()),
+    successMetrics: z.array(z.string()),
+    biggestChallenges: z.array(z.string()),
+  }),
+});
+
+// ── Tier 3: BUSINESS (Bootstrapped small business) ────────────────────────────
+// Full SBA-style business plan with 12-month financials
+
+export const ideaFinisherSchema = z.object({
+  ...coreBlueprint,
+  ...marketResearch,
+  ...marketContext,
+  ...executionMaterials,
+  executiveSummary: z.object({
+    businessDescription: z.string(),
+    missionStatement: z.string(),
+    problemStatement: z.string(),
+    solutionStatement: z.string(),
+    uniqueValueProposition: z.string(),
+    futureVision: z.string(),
+    companyAdvantages: z.array(z.string()),
+    keySuccessFactors: z.array(z.string()),
+  }),
+  financialPlan: z.object({
+    revenueModel: z.string(),
+    pricingStrategy: z.string(),
+    monthlyBreakeven: z.string(),
+    projectedRevenue3Month: z.string(),
+    projectedRevenue12Month: z.string(),
+    startupCosts: z.string(),
+    fundingNeeds: z.string(),
+    growthPlan: z.string(),
+    keyAssumptions: z.array(z.string()),
+  }),
+  launchMilestones: z.object({
+    week1: z.array(z.string()),
+    month1: z.array(z.string()),
+    month3: z.array(z.string()),
+    month6: z.array(z.string()),
+    successMetrics: z.array(z.string()),
+    biggestChallenges: z.array(z.string()),
+  }),
 });
 
 export type IdeaFinisher = z.infer<typeof ideaFinisherSchema>;
+
+// ── Tier 4: VENTURE (Funded startup / Building a full company) ────────────────
+// Full business plan + investor-grade sections
+
+export const ventureFinisherSchema = ideaFinisherSchema.extend({
+  investorSummary: z.object({
+    pitchNarrative: z.string(),
+    tamSamSomDetail: z.string(),
+    moat: z.string(),
+    whyNow: z.string(),
+    traction: z.string(),
+  }),
+  unitEconomics: z.object({
+    cac: z.string(),
+    ltv: z.string(),
+    ltvCacRatio: z.string(),
+    paybackPeriod: z.string(),
+    grossMargin: z.string(),
+  }),
+  fundingStrategy: z.object({
+    raiseAmount: z.string(),
+    useOfFunds: z.array(z.string()),
+    seriesATriggers: z.array(z.string()),
+    investorProfile: z.string(),
+  }),
+  teamPlan: z.object({
+    founderRoles: z.array(z.string()),
+    earlyHires: z.array(z.string()),
+    advisors: z.string(),
+  }),
+});
+
+// ── Tier 5: EXPLORE (Still figuring it out) ───────────────────────────────────
+// Exploratory: helps understand what type of business this could become
+
+export const exploreFinisherSchema = z.object({
+  ...coreBlueprint,
+  ...marketResearch,
+  ...marketContext,
+  ...executionMaterials,
+  businessTypeAnalysis: z.object({
+    whatTypeOfBusiness: z.string(),
+    primaryPath: z.string(),
+    alternativePaths: z.array(z.object({
+      type: z.string(),
+      pros: z.string(),
+      cons: z.string(),
+    })),
+    readinessScore: z.enum(["not ready", "almost ready", "ready"]),
+    keyUnknowns: z.array(z.string()),
+    cheapestValidation: z.string(),
+  }),
+  financialPlan: z.object({
+    revenueModel: z.string(),
+    estimatedRevenueCeiling: z.string(),
+    launchCost: z.string(),
+    fundingNeeds: z.string(),
+    keyAssumptions: z.array(z.string()),
+  }),
+  launchMilestones: z.object({
+    week1: z.array(z.string()),
+    month1: z.array(z.string()),
+    pivotTriggers: z.array(z.string()),
+    successMetrics: z.array(z.string()),
+    biggestChallenges: z.array(z.string()),
+  }),
+});
+
+// ── Goal tier routing ─────────────────────────────────────────────────────────
+
+export type GoalTier = "lean" | "indie" | "business" | "venture" | "explore";
+
+export function getGoalTier(planGoal?: string): GoalTier {
+  const g = (planGoal ?? "").toLowerCase();
+  // "funded" must be checked before "fun" — "funded" contains "fun" as a substring
+  if (g.includes("funded") || g.includes("full company")) return "venture";
+  if (g.includes("profitable side")) return "indie";
+  if (g.includes("bootstrapped")) return "business";
+  if (g.includes("figuring")) return "explore";
+  if (/\bfun\b/.test(g) || g.includes("learn")) return "lean";
+  return "business";
+}
+
+export function getFinisherSchema(tier: GoalTier) {
+  switch (tier) {
+    case "lean":     return leanFinisherSchema;
+    case "indie":    return indieFinisherSchema;
+    case "business": return ideaFinisherSchema;
+    case "venture":  return ventureFinisherSchema;
+    case "explore":  return exploreFinisherSchema;
+  }
+}

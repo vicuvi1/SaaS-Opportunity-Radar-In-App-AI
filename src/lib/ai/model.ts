@@ -30,6 +30,14 @@ export function getAnalystModel(): LanguageModel {
   return anthropic("claude-sonnet-4-6");
 }
 
+// Finisher — gpt-5.4. Anthropic's grammar compiler rejects our large schema;
+// OpenAI strict JSON schema handles it without issues.
+export function getFinisherModel(): LanguageModel {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("OPENAI_API_KEY is not set.");
+  return openai("gpt-5.4");
+}
+
 // Query extractor for Reddit/HN/GitHub search — gpt-4o-mini (fast, cheap, 4-keyword task)
 export function getQueryModel(): LanguageModel {
   const key = process.env.OPENAI_API_KEY;

@@ -111,8 +111,8 @@ export function SignInCard({ onClose }: { onClose?: () => void }) {
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       setBusy(false);
-      if (error) setMsg({ text: error.message, error: true });
-      else onClose?.();
+      if (error) { setMsg({ text: error.message, error: true }); return; }
+      window.location.href = "/workspace";
     }
   }
 

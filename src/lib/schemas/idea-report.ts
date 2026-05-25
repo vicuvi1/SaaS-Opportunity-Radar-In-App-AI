@@ -16,7 +16,7 @@ export const topSignalSchema = z.object({
 
 // Verdict-focused validation report.
 // Answers ONLY: "Is this raw idea fundamentally promising?"
-// Everything execution-related (MVP, GTM, positioning, monetization strategy) lives in Idea Finisher.
+// Everything execution-related (MVP, GTM, positioning, monetization strategy) lives in Launch Plan.
 export const ideaReportSchema = z.object({
   title: z.string(),
   oneLiner: z.string(),

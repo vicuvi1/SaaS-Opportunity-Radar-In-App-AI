@@ -1,0 +1,730 @@
+[
+  {
+    "id": "lean-01",
+    "tier": "lean",
+    "goal": "Build something fun / learn",
+    "topic": "A CLI tool that turns your git commit history into a bedtime story, narrated in the style of different famous authors (Hemingway, Tolkien, Dr. Seuss)",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 31698,
+      "buildGateScore": 82,
+      "verdict": "STRONG SIGNAL",
+      "summary": "For a fun/learn goal, this scores very well. It is technically interesting, clearly buildable by a solo full-stack engineer in a weekend, and sits in a space where developer humor and creative tooling have a proven track record of going viral on HN and Twitter. Snippets confirm genuine cultural enga",
+      "topSignalCount": 3,
+      "snippetCount": 34
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 82493,
+      "tier": "lean",
+      "positioning": "GitTales is a developer CLI for engineers who want to turn boring or chaotic git history into a funny, shareable artifact. It solves the small but real pain of commit history being hard to emotionally revisit or demo in a human way, and it stands out by treating a repository like narrative material, then retelling it in recognizable literary parody styles directly from the terminal with near-zero setup.",
+      "coreProblem": "Git history already contains a story, but existing tools expose it as mechanics instead of meaning. The product insight is that developers do not just want to inspect commits, they want to relive the emotional arc of building something, especially in a format that is funny enough to share.",
+      "buildPromptWords": 1134,
+      "competitorCount": 0,
+      "competitors": [],
+      "painClusterCount": 0,
+      "demandSignalCount": 0,
+      "hasExecutiveSummary": false,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "lean-02",
+    "tier": "lean",
+    "goal": "Build something fun / learn",
+    "topic": "A browser extension that replaces corporate jargon and buzzwords on any webpage with plain-English equivalents in real time",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 32921,
+      "buildGateScore": 82,
+      "verdict": "STRONG SIGNAL",
+      "summary": "For a fun/learn goal, this is a near-ideal project. The concept is technically tractable for a medium-skill coder, has clear precedent in beloved novelty extensions like Cloud-to-Butt (snippet 19) and the Falcons-deleter (snippet 11), and sits in a well-understood browser extension ecosystem. Commer",
+      "topSignalCount": 3,
+      "snippetCount": 51
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 92523,
+      "tier": "lean",
+      "positioning": "A lightweight browser extension for tech workers, PMs, consultants, recruiters, and anyone trapped in slide-deck speak, that rewrites corporate jargon on any webpage into blunt plain English in real time. Its edge is not AI or enterprise workflow, it is speed, humor, and trust: a transparent, local-first extension with a curated dictionary of actually annoying buzzwords and sharp replacements that make Slack, LinkedIn, docs, and company blogs instantly more readable and more fun.",
+      "coreProblem": "Corporate jargon is not just annoying copy, it is a translation tax. People mentally decode inflated language into simple meaning every day. The product insight is that replacing jargon inline, at the point of reading, is faster and more delightful than asking users to summarize, paste text elsewhere, or install a heavy writing assistant.",
+      "buildPromptWords": 1192,
+      "competitorCount": 0,
+      "competitors": [],
+      "painClusterCount": 0,
+      "demandSignalCount": 0,
+      "hasExecutiveSummary": false,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "lean-03",
+    "tier": "lean",
+    "goal": "Build something fun / learn",
+    "topic": "A calendar-aware Pomodoro timer that names each focus block after the upcoming meeting it precedes and shows a one-sentence mental prep prompt before the meeting starts",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 41632,
+      "buildGateScore": 82,
+      "verdict": "STRONG SIGNAL",
+      "summary": "For a junior developer wanting to practice TypeScript and build something fun, this is a near-ideal project. The concept is technically scoped correctly for a frontend-focused dev, the problem space is genuinely active, and at least two shipped competitors (Focusly, FocusMode) validate that calendar",
+      "topSignalCount": 3,
+      "snippetCount": 70
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 84130,
+      "tier": "lean",
+      "positioning": "A lightweight desktop-first web app for knowledge workers who live in Google Calendar and hate losing focus right before meetings. It automatically turns the gap before your next meeting into a named focus sprint, then gives you a short mental transition prompt so you finish work cleanly and enter the meeting prepared. What makes it different is the transition layer: it is not just a Pomodoro timer with calendar sync, it is a meeting-aware focus tool built around cognitive handoff.",
+      "coreProblem": "The real pain is not just bad timeboxing. It is failed context switching. People need focus sessions that automatically respect the next calendar commitment and help them mentally pivot before the meeting starts.",
+      "buildPromptWords": 1080,
+      "competitorCount": 0,
+      "competitors": [],
+      "painClusterCount": 0,
+      "demandSignalCount": 0,
+      "hasExecutiveSummary": false,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "indie-01",
+    "tier": "indie",
+    "goal": "Build a profitable side project",
+    "topic": "Weekly status report generator for freelancers and contractors - pulls from GitHub commits, Jira tickets, and calendar events to auto-draft a professional client-facing status update",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 42970,
+      "buildGateScore": 72,
+      "verdict": "GOOD",
+      "summary": "Signals suggest this is a real, recurring pain for developers juggling multiple clients - snippet [9] describes a senior engineer manually keeping a Google doc of everything he touched each day as 'exactly as tedious as it sounds,' and snippet [18] shows a founder already building Klarops to solve t",
+      "topSignalCount": 3,
+      "snippetCount": 70
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 133866,
+      "tier": "indie",
+      "positioning": "A lightweight weekly status report generator built for independent developers, consultants, and small agencies who manage multiple client accounts and hate reconstructing their week every Friday. It automatically pulls work evidence from GitHub, Jira, and Google Calendar, groups activity by client, and drafts polished client-facing updates in the right tone, which is different from team-focused status tools that optimize for internal manager visibility instead of external trust and professionalism.",
+      "coreProblem": "Freelancers do not need more work data, they need trustworthy client-ready narrative output assembled from fragmented evidence across tools, with client context and professional tone baked in.",
+      "buildPromptWords": 921,
+      "competitorCount": 5,
+      "competitors": [
+        {
+          "name": "Klarops",
+          "url": null
+        },
+        {
+          "name": "Standuply",
+          "url": null
+        },
+        {
+          "name": "Harvest",
+          "url": null
+        },
+        {
+          "name": "Toggl Track",
+          "url": null
+        },
+        {
+          "name": "ChatGPT or Claude with manual prompts",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 8,
+      "hasExecutiveSummary": true,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "indie-02",
+    "tier": "indie",
+    "goal": "Build a profitable side project",
+    "topic": "Notion template store for independent consultants - SOW templates, client onboarding checklists, project trackers, invoicing dashboards",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 39705,
+      "buildGateScore": 72,
+      "verdict": "GOOD",
+      "summary": "Signals suggest this is a genuinely viable side project for this specific founder. Reddit snippets confirm solo consultants repeatedly rebuild the same Notion setups from scratch (snippet 14 explicitly describes this pain), and the founder has a 4K LinkedIn audience of the exact target buyer, which ",
+      "topSignalCount": 3,
+      "snippetCount": 44
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 126420,
+      "tier": "indie",
+      "positioning": "A premium Notion operating system for independent consultants who are tired of rebuilding the same client admin stack every time they start or scale their practice. It packages the exact workflows consultants repeatedly need, SOW creation, client onboarding, project delivery tracking, invoice visibility, and client health management, into one polished, consultant-specific setup that feels closer to a ready-to-run firm OS than a generic template bundle. The difference is sharp positioning for solo strategy and operations consultants, practical client-facing deliverables, and implementation guidance that helps low-ops consultants go live in under an hour.",
+      "coreProblem": "Independent consultants do not just need templates, they need a pre-built consulting operations system that turns repeatable client admin into a standardized workflow, so they stop spending billable time recreating back-office structure for every engagement.",
+      "buildPromptWords": 993,
+      "competitorCount": 5,
+      "competitors": [
+        {
+          "name": "Notion Template Gallery",
+          "url": null
+        },
+        {
+          "name": "Gumroad Notion sellers",
+          "url": null
+        },
+        {
+          "name": "Bonsai",
+          "url": null
+        },
+        {
+          "name": "Better Proposals",
+          "url": null
+        },
+        {
+          "name": "ClickUp or Asana templates for freelancers",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 5,
+      "hasExecutiveSummary": true,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "indie-03",
+    "tier": "indie",
+    "goal": "Build a profitable side project",
+    "topic": "Upwork and Fiverr proposal generator - analyzes the job posting and writes a tailored, high-converting proposal for freelancers using AI",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 39798,
+      "buildGateScore": 52,
+      "verdict": "UNCLEAR",
+      "summary": "The pain is real and well-documented: freelancers are drowning in proposals, connects cost money, and speed matters. But the market is already crowded with direct competitors (WinTheGig, ProposalWala, Ergate.ai) who are themselves struggling with distribution and pre-revenue status, which signals th",
+      "topSignalCount": 3,
+      "snippetCount": 63
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 136982,
+      "tier": "indie",
+      "positioning": "A proposal generator built for active freelancers on Upwork and Fiverr who are tired of burning time and connects on generic bids. Instead of being a thin ChatGPT wrapper, it turns a job post plus the freelancer's proof points into short, platform-native proposals with relevance hooks, portfolio bullets, risk-reversal language, and client-specific questions. The difference is workflow focus, fast reuse of personal case studies, and proposal scoring against real freelance marketplace constraints.",
+      "coreProblem": "Freelancers do not need more AI writing, they need faster decision-quality in the first 3 minutes of a bid: is this job worth pursuing, what proof matches this client, and what concise message will maximize reply odds without sounding templated.",
+      "buildPromptWords": 1095,
+      "competitorCount": 5,
+      "competitors": [
+        {
+          "name": "WinTheGig",
+          "url": null
+        },
+        {
+          "name": "ProposalWala",
+          "url": null
+        },
+        {
+          "name": "Ergate.ai",
+          "url": null
+        },
+        {
+          "name": "ChatGPT",
+          "url": null
+        },
+        {
+          "name": "Notion and Google Docs templates",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 6,
+      "hasExecutiveSummary": true,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "biz-01",
+    "tier": "business",
+    "goal": "Bootstrapped small business",
+    "topic": "Done-for-you bookkeeping service for Shopify store owners doing $10K-$500K/year - AI categorizes transactions, human reviews and files quarterly taxes, flat monthly fee of $149",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 37581,
+      "buildGateScore": 82,
+      "verdict": "STRONG SIGNAL",
+      "summary": "Signals strongly suggest this is a well-matched bootstrapped business for this specific founder. The $10K-$500K Shopify merchant segment is chronically underserved by traditional accountants who don't understand e-commerce revenue recognition, COGS, and multi-channel reconciliation, and the flat-fee",
+      "topSignalCount": 3,
+      "snippetCount": 61
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 172893,
+      "tier": "business",
+      "positioning": "A flat-fee, ecommerce-specific bookkeeping and quarterly tax service for Shopify store owners doing $10K to $500K per year, built for founders who have outgrown DIY spreadsheets and generic bookkeepers but are not large enough for a $500 to $2,000 per month ecommerce finance firm. The difference is simple: AI handles transaction categorization and cleanup to keep delivery efficient, while a licensed CPA reviews the books, understands Shopify payouts, fees, refunds, inventory-related reporting, and files quarterly taxes, giving merchants both affordability and trust.",
+      "coreProblem": "Shopify store owners need reliable, ecommerce-literate monthly books and tax-ready reporting without having to become accounting experts, manage freelancers, or pay enterprise-style accounting retainers.",
+      "buildPromptWords": 2513,
+      "competitorCount": 5,
+      "competitors": [
+        {
+          "name": "Finaloop",
+          "url": null
+        },
+        {
+          "name": "Bench",
+          "url": null
+        },
+        {
+          "name": "Pilot",
+          "url": null
+        },
+        {
+          "name": "A2X plus QuickBooks",
+          "url": null
+        },
+        {
+          "name": "Freelance or offshore bookkeepers",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 6,
+      "hasExecutiveSummary": true,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "biz-02",
+    "tier": "business",
+    "goal": "Bootstrapped small business",
+    "topic": "Local SEO SaaS for independent restaurant owners - automates Google Business Profile updates, AI-generated review responses, and local citation management for $99/month",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 41032,
+      "buildGateScore": 74,
+      "verdict": "GOOD",
+      "summary": "This is a well-scoped bootstrapped SaaS play with a founder who has genuine distribution advantages and domain expertise that most competitors lack. The pain is real and recurring: restaurant owners are time-poor, Google Business Profile management is genuinely tedious, and the $99/month price point",
+      "topSignalCount": 3,
+      "snippetCount": 70
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 170100,
+      "tier": "business",
+      "positioning": "A vertical local SEO operations tool for independent restaurant owners who need to keep Google Business Profile accurate, respond to reviews fast, and maintain local visibility without paying agency retainers or learning complex SEO software. Unlike broad local marketing suites built for multi-location brands and agencies, this product is restaurant-specific, setup-light, priced at $99/month, and focused on the few recurring tasks that actually move visibility and trust for single-location operators.",
+      "coreProblem": "Restaurant owners need a simple system that turns recurring local SEO maintenance into a low-effort weekly operating routine, because visibility losses usually come from neglected updates, slow review responses, and inconsistent listing data rather than from a lack of marketing ideas.",
+      "buildPromptWords": 2349,
+      "competitorCount": 6,
+      "competitors": [
+        {
+          "name": "Yext",
+          "url": null
+        },
+        {
+          "name": "Birdeye",
+          "url": null
+        },
+        {
+          "name": "Vendasta",
+          "url": null
+        },
+        {
+          "name": "SOCi",
+          "url": null
+        },
+        {
+          "name": "ChatGPT plus manual workflow",
+          "url": null
+        },
+        {
+          "name": "Local agency or freelance consultant",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 5,
+      "hasExecutiveSummary": true,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "biz-03",
+    "tier": "business",
+    "goal": "Bootstrapped small business",
+    "topic": "White-label podcast editing and show notes service for B2B companies - turnaround in 48 hours, flat $499/month for one episode per week, includes transcript, blog post, and social clips",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 48535,
+      "buildGateScore": 78,
+      "verdict": "GOOD",
+      "summary": "Signals suggest this is a well-structured bootstrapped service business with real, documented pain. HN snippets confirm podcast post-production is genuinely time-consuming - one producer documented 305 to 1,800 cuts per episode plus manual show notes taking roughly one hour per recorded hour - and b",
+      "topSignalCount": 3,
+      "snippetCount": 70
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 169140,
+      "tier": "business",
+      "positioning": "A white-label podcast post-production service for B2B podcast agencies, producers, and in-house marketing teams that need reliable weekly delivery without hiring full-time editors. The offer is simple: one episode per week, edited and delivered within 48 hours, including polished audio, transcript, show notes, a blog post draft, and social clips for a flat $499 per month. What makes this different is not just editing, it is the combination of agency-friendly white-label fulfillment, predictable turnaround, content repurposing, and human QA that closes the gap between DIY AI tools and expensive full-service podcast agencies.",
+      "coreProblem": "Users need a dependable, low-management weekly podcast fulfillment layer that converts raw recordings into client-ready distribution assets within 48 hours, without requiring them to manage multiple freelancers or stitch together AI tools.",
+      "buildPromptWords": 1991,
+      "competitorCount": 6,
+      "competitors": [
+        {
+          "name": "Lower Street",
+          "url": null
+        },
+        {
+          "name": "Resonate Recordings",
+          "url": null
+        },
+        {
+          "name": "Descript",
+          "url": null
+        },
+        {
+          "name": "Cleanvoice",
+          "url": null
+        },
+        {
+          "name": "Castmagic",
+          "url": null
+        },
+        {
+          "name": "Upwork freelance podcast editors",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 5,
+      "hasExecutiveSummary": true,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "venture-01",
+    "tier": "venture",
+    "goal": "Launch a funded startup",
+    "topic": "AI contract intelligence platform for mid-market companies ($10M-$500M revenue) - extracts obligations from contracts, flags renewal deadlines, auto-generates summaries, integrates with Salesforce and DocuSign",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 46873,
+      "buildGateScore": 72,
+      "verdict": "GOOD",
+      "summary": "Signals suggest this is a real, funded-startup-viable opportunity with genuine enterprise pain and existing software budgets in the category. Snippet [7] is the clearest WTP signal in the set: a user describes nearly auto-renewing a six-figure SaaS contract due to a buried 90-day notice clause, caug",
+      "topSignalCount": 3,
+      "snippetCount": 35
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 101088,
+      "tier": "lean",
+      "positioning": "An AI contract intelligence platform for legal ops leaders and finance teams at mid-market companies that are too large to manage renewals and obligations in spreadsheets, but too operationally constrained to implement heavyweight CLM systems. The wedge is not generic contract AI. It is a renewal-and-obligation control layer that sits on top of executed agreements, extracts critical dates and commitments, routes them into business systems like Salesforce and DocuSign, and creates an auditable human-review workflow so teams can trust what the AI found.",
+      "coreProblem": "Mid-market companies do not primarily need another document repository. They need a trusted operational system that turns signed contracts into monitored business commitments, with AI doing the first pass and humans approving the critical facts before deadlines or obligations are missed.",
+      "buildPromptWords": 1343,
+      "competitorCount": 0,
+      "competitors": [],
+      "painClusterCount": 0,
+      "demandSignalCount": 0,
+      "hasExecutiveSummary": false,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "venture-02",
+    "tier": "venture",
+    "goal": "Launch a funded startup",
+    "topic": "Developer tool that auto-generates and maintains integration tests by watching production traffic and replaying real API calls in staging - no manual test writing required",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 47053,
+      "buildGateScore": 72,
+      "verdict": "GOOD",
+      "summary": "Signals suggest a real, recurring pain point: developers consistently express frustration with the cost of writing and maintaining integration tests, and at least one HN commenter explicitly said they would 'happily pay' for AI-generated integration-level tests. The concept has direct validation in ",
+      "topSignalCount": 3,
+      "snippetCount": 70
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 99704,
+      "tier": "lean",
+      "positioning": "This startup should position itself as the production-traffic-native testing platform for engineering teams that ship regulated or high-risk APIs and cannot afford brittle, hand-written integration suites. The product automatically captures real production request patterns, sanitizes sensitive data, replays deterministic test cases in staging or ephemeral environments, and keeps those tests current as APIs evolve. What makes it different is not generic test generation, it is trust: deterministic replay, built-in redaction for compliance-sensitive teams, and CI-grade failure reporting that makes generated integration tests usable in serious software delivery workflows rather than demo-grade tooling.",
+      "coreProblem": "Integration testing is not fundamentally a test-writing problem, it is a production-behavior-capture and determinism problem. Teams do not need more assertions to author by hand, they need a system that continuously converts real user traffic into safe, stable, high-signal regression checks that developers actually trust.",
+      "buildPromptWords": 1269,
+      "competitorCount": 0,
+      "competitors": [],
+      "painClusterCount": 0,
+      "demandSignalCount": 0,
+      "hasExecutiveSummary": false,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "venture-03",
+    "tier": "venture",
+    "goal": "Building a full company",
+    "topic": "B2B marketplace connecting US companies needing nearshore software development with pre-vetted agencies in Latin America - includes project management layer, escrow payments, and delivery guarantees",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 44259,
+      "buildGateScore": 62,
+      "verdict": "UNCLEAR",
+      "summary": "The underlying demand is real and well-documented outside these snippets: US companies genuinely struggle with offshore dev quality, delivery accountability, and timezone friction, and LATAM nearshoring has grown materially as a category. The founder's existing supply-side relationships with 80+ age",
+      "topSignalCount": 3,
+      "snippetCount": 70
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 177925,
+      "tier": "venture",
+      "positioning": "A managed B2B marketplace for US SMB and mid-market companies that need reliable nearshore software development, connecting them with pre-vetted Latin American agencies through a transaction workflow that adds escrow, milestone-based project controls, and limited delivery assurance. Unlike generic freelancer marketplaces or agency directories, the product is designed around reducing procurement risk and keeping both parties on-platform through structured scoping, milestone acceptance, payment protection, and performance visibility.",
+      "coreProblem": "The market does not primarily lack agency supply, it lacks a trusted transaction and delivery layer that lets US companies buy nearshore software outcomes with lower perceived execution risk and lets strong LATAM agencies close business faster without discounting trust.",
+      "buildPromptWords": 1004,
+      "competitorCount": 5,
+      "competitors": [
+        {
+          "name": "Clutch",
+          "url": null
+        },
+        {
+          "name": "Upwork Enterprise",
+          "url": null
+        },
+        {
+          "name": "Toptal",
+          "url": null
+        },
+        {
+          "name": "BairesDev",
+          "url": null
+        },
+        {
+          "name": "Andela",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 5,
+      "hasExecutiveSummary": true,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": true,
+      "hasBusinessTypeAnalysis": false,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "explore-01",
+    "tier": "explore",
+    "goal": "Still figuring it out",
+    "topic": "Something in the HR tech / recruiting space. I have 5 years in HR and some coding skills. I keep seeing people rage about ATS systems filtering out good candidates, and hiring managers spending hours on manual screening. Not sure if it should be a tool, a service, or something else.",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 42324,
+      "buildGateScore": 62,
+      "verdict": "UNCLEAR",
+      "summary": "The pain is real and well-documented across multiple snippets: hiring managers are losing qualified candidates to literal keyword matching, and manual screening at volume is genuinely broken. However, the space is already crowded with funded competitors (Greenhouse, Rippling, Lever, HackerRank, Inte",
+      "topSignalCount": 3,
+      "snippetCount": 43
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 121630,
+      "tier": "explore",
+      "positioning": "A practical recruiting workflow product for in-house recruiters and hiring managers at small to mid-size companies who are drowning in applicant volume, do not trust ATS filters, and waste hours manually screening resumes. The differentiator should not be another full ATS or generic AI ranker, but a lightweight human-in-the-loop screening copilot that helps teams review applicants faster, recover overlooked candidates, and produce transparent shortlists they can defend to hiring managers and compliance stakeholders.",
+      "coreProblem": "The real problem is not just that ATS systems miss good candidates. It is that recruiting teams lack a fast, trusted, auditable way to turn large applicant pools into defensible shortlists without either over-relying on brittle automation or burning human hours on repetitive screening.",
+      "buildPromptWords": 811,
+      "competitorCount": 5,
+      "competitors": [
+        {
+          "name": "Greenhouse",
+          "url": null
+        },
+        {
+          "name": "Lever",
+          "url": null
+        },
+        {
+          "name": "Ashby",
+          "url": null
+        },
+        {
+          "name": "Workday Recruiting",
+          "url": null
+        },
+        {
+          "name": "HireVue and adjacent screening platforms",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 5,
+      "hasExecutiveSummary": false,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": true,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "explore-02",
+    "tier": "explore",
+    "goal": "Still figuring it out",
+    "topic": "I am a graphic designer with 8 years of client work experience and I am burned out on projects. I want to build something more passive - either a digital product, an info product, or some kind of SaaS. I have strong visual skills but limited coding ability. Not sure where to focus.",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 47336,
+      "buildGateScore": 52,
+      "verdict": "UNCLEAR",
+      "summary": "The founder has genuine assets - 8 years of client work, a portfolio of 200+ projects, and deep domain expertise in brand identity - but has not yet identified a specific concept to validate. Scoring an idea without a hypothesis is impossible, so this score reflects the opportunity space for a desig",
+      "topSignalCount": 3,
+      "snippetCount": 58
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 121621,
+      "tier": "explore",
+      "positioning": "Build for early-stage service businesses and solo founders who need a credible brand identity process but cannot afford a full custom engagement. The strongest near-term opportunity is not generic design assets or a full SaaS, but a productized brand system, a digital toolkit that packages your 8 years of client brand identity experience into structured templates, decision tools, and lightweight guidance. What makes it different is that it comes from repeated real client workflows, not aesthetic inspiration packs, and it helps non-designers make brand decisions with less confusion and rework.",
+      "coreProblem": "The real pain is not 'people need design assets'. It is that both founders and newer designers lack a practical, repeatable brand identity operating system that turns fuzzy inputs into usable brand decisions without hiring an expensive strategist.",
+      "buildPromptWords": 622,
+      "competitorCount": 5,
+      "competitors": [
+        {
+          "name": "The Futur",
+          "url": null
+        },
+        {
+          "name": "Creative Market",
+          "url": null
+        },
+        {
+          "name": "Envato Elements",
+          "url": null
+        },
+        {
+          "name": "Gumroad creator template sellers",
+          "url": null
+        },
+        {
+          "name": "Looka or similar AI branding tools",
+          "url": null
+        }
+      ],
+      "painClusterCount": 5,
+      "demandSignalCount": 5,
+      "hasExecutiveSummary": false,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": true,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  },
+  {
+    "id": "explore-03",
+    "tier": "explore",
+    "goal": "Still figuring it out",
+    "topic": "I own a small fitness gym (30 members, been open 2 years) and I have basic coding skills from a bootcamp I did 3 years ago. I am looking for a business idea - could be tech or service - that either helps gym owners like me or uses my fitness industry knowledge. Open to anything.",
+    "validateStep": {
+      "ok": true,
+      "durationMs": 37033,
+      "buildGateScore": 58,
+      "verdict": "UNCLEAR",
+      "summary": "The founder has genuine unfair advantages: real operator experience, domain credibility, and a warm distribution network of 20+ gym owners. That combination is rare and meaningful. However, the idea is still a category, not a concept. The gym management software space already has entrenched players ",
+      "topSignalCount": 3,
+      "snippetCount": 70
+    },
+    "finisherStep": {
+      "ok": true,
+      "durationMs": 134837,
+      "tier": "explore",
+      "positioning": "A realistic wedge for this founder is not another all-in-one gym management platform, but a retention and member communication tool for small independent gyms, boutique studios, and personal training facilities that lose revenue through awkward cancellations, unclear billing, missed follow-ups, and inconsistent member check-ins. It would be positioned as a lightweight member save and communication layer that works alongside whatever system they already use, not a replacement for Mindbody or TeamUp. The difference is that it focuses on one painful workflow, keeping members from silently churning, with faster setup, lower price, and language shaped by an actual gym owner rather than generic SaaS software people.",
+      "coreProblem": "Small gyms do not mainly need more records, they need a simple system that tells them which members are drifting, prompts the right outreach, tracks save conversations, and makes cancellations and pauses feel transparent instead of adversarial.",
+      "buildPromptWords": 899,
+      "competitorCount": 5,
+      "competitors": [
+        {
+          "name": "Mindbody",
+          "url": null
+        },
+        {
+          "name": "TeamUp",
+          "url": null
+        },
+        {
+          "name": "Glofox",
+          "url": null
+        },
+        {
+          "name": "ABC Glofox / ABC Fitness ecosystem",
+          "url": null
+        },
+        {
+          "name": "Airtable plus manual process",
+          "url": null
+        }
+      ],
+      "painClusterCount": 4,
+      "demandSignalCount": 4,
+      "hasExecutiveSummary": false,
+      "hasFinancialPlan": true,
+      "hasMilestones": true,
+      "hasInvestorSummary": false,
+      "hasBusinessTypeAnalysis": true,
+      "qualityIssues": [],
+      "emDashFields": []
+    }
+  }
+]

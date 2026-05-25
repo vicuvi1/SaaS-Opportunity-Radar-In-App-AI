@@ -5,17 +5,12 @@ import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { saveFounderProfile, type FounderProfile } from "@/lib/profile/founder-profile";
 import {
-  ROLE_OPTIONS,
-  SKILL_OPTIONS,
-  COMMUNITY_OPTIONS,
-  TECH_OPTIONS,
-  GOAL_OPTIONS,
-  MONETIZATION_OPTIONS,
-  BUILD_TYPE_OPTIONS,
-} from "@/lib/profile/options";
-import { ChipGroup } from "@/components/ui/chip-group";
+  GoalFields,
+  SkillsFields,
+  CommunitiesFields,
+  MonetizationFields,
+} from "@/components/profile/founder-profile-fields";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
@@ -249,94 +244,26 @@ export function SettingsPanel({
               )}
 
               {profileExpanded && (
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <p className="text-xs text-muted-foreground -mt-1">
                     Used by the Opportunity Engine to generate ideas matched to you.
                   </p>
 
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-foreground">What best describes you?</p>
-                    <ChipGroup
-                      options={ROLE_OPTIONS}
-                      selected={role}
-                      multi
-                      allowCustom
-                      customPlaceholder="Add your own role..."
-                      onChange={(v) => setRole(v as string[])}
-                    />
-                  </div>
+                  <GoalFields
+                    goal={goal}
+                    buildType={buildType}
+                    onGoalChange={setGoal}
+                    onBuildTypeChange={setBuildType}
+                  />
 
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-foreground">Skills & expertise</p>
-                    <ChipGroup
-                      options={SKILL_OPTIONS}
-                      selected={skills}
-                      multi
-                      allowCustom
-                      searchable
-                      searchPlaceholder="Search skills (e.g. marketing, data analysis)..."
-                      customPlaceholder="Add a skill..."
-                      onChange={(v) => setSkills(v as string[])}
-                    />
-                  </div>
+                  <SkillsFields skills={skills} onSkillsChange={setSkills} />
 
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-foreground">Communities you&apos;re embedded in</p>
-                    <p className="text-[11px] text-muted-foreground/60">Groups you have genuine access to - not just topics you&apos;re interested in.</p>
-                    <ChipGroup
-                      options={COMMUNITY_OPTIONS}
-                      selected={communities}
-                      multi
-                      allowCustom
-                      searchable
-                      searchPlaceholder="Search communities (e.g. poker players, gym owners)..."
-                      customPlaceholder="Add a community..."
-                      onChange={(v) => setCommunities(v as string[])}
-                    />
-                  </div>
+                  <CommunitiesFields communities={communities} onCommunitiesChange={setCommunities} />
 
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-foreground">Technical ability</p>
-                    <ChipGroup
-                      options={TECH_OPTIONS}
-                      selected={technicalLevel}
-                      onChange={(v) => setTechnicalLevel(v as string)}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-foreground">What are you building toward?</p>
-                    <ChipGroup
-                      options={GOAL_OPTIONS}
-                      selected={goal}
-                      multi
-                      allowCustom
-                      customPlaceholder="Add your own goal..."
-                      onChange={(v) => setGoal(v as string[])}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-foreground">What type of business do you want to build?</p>
-                    <ChipGroup
-                      options={BUILD_TYPE_OPTIONS}
-                      selected={buildType}
-                      multi
-                      onChange={(v) => setBuildType(v as string[])}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-foreground">Monetization preference</p>
-                    <ChipGroup
-                      options={MONETIZATION_OPTIONS}
-                      selected={monetizationPref}
-                      multi
-                      allowCustom
-                      customPlaceholder="Add a monetization model..."
-                      onChange={(v) => setMonetizationPref(v as string[])}
-                    />
-                  </div>
+                  <MonetizationFields
+                    monetizationPref={monetizationPref}
+                    onMonetizationPrefChange={setMonetizationPref}
+                  />
 
                   <div className="flex items-center gap-2">
                     <Button

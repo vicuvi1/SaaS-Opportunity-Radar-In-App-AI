@@ -53,7 +53,10 @@ export async function POST(req: Request) {
     const schema = getFinisherSchema(tier);
     const systemPrompt = getFinisherSystemPrompt(tier);
 
-    await deductCredits(user.id, CREDIT_COSTS.finish, `Launch Plan: ${topic.slice(0, 80)}`);
+    const deducted = await deductCredits(user.id, CREDIT_COSTS.finish, `Launch Plan: ${topic.slice(0, 80)}`);
+    if (!deducted) {
+      return Response.json({ error: "Insufficient credits.", required: CREDIT_COSTS.finish }, { status: 402 });
+    }
 
     const result = streamText({
       model,

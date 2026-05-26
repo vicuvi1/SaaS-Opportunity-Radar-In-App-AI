@@ -24,7 +24,10 @@ export async function POST(req: Request) {
       return Response.json({ error: "Provide a niche or complete your founder profile." }, { status: 400 });
     }
 
-    await deductCredits(user.id, CREDIT_COSTS.discover, `Discover: ${niche.slice(0, 80) || "profile-based"}`);
+    const deducted = await deductCredits(user.id, CREDIT_COSTS.discover, `Discover: ${niche.slice(0, 80) || "profile-based"}`);
+    if (!deducted) {
+      return Response.json({ error: "Insufficient credits.", required: CREDIT_COSTS.discover }, { status: 402 });
+    }
 
     const result = streamText({
       model: anthropic("claude-sonnet-4-6"),

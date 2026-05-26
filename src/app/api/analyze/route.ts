@@ -60,7 +60,10 @@ export async function POST(req: Request) {
       );
     }
 
-    await deductCredits(user.id, CREDIT_COSTS.validate, `Validate: ${topic.slice(0, 80)}`);
+    const deducted = await deductCredits(user.id, CREDIT_COSTS.validate, `Validate: ${topic.slice(0, 80)}`);
+    if (!deducted) {
+      return Response.json({ error: "Insufficient credits.", required: CREDIT_COSTS.validate }, { status: 402 });
+    }
 
     const result = streamText({
       model,

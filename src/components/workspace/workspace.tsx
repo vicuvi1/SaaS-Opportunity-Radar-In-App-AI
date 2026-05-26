@@ -294,7 +294,7 @@ export function Workspace() {
     setThreads((prev) => [t, ...prev]);
     setActiveId(t.id);
     setLiveReport(undefined);
-    setSheetOpen(false);
+    setMobileSidebarOpen(false);
   }, []);
 
   const toggleFavorite = useCallback((id: string) => {

@@ -345,7 +345,7 @@ export function IdeaStudio({
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         const target = e.target as HTMLElement | null;
-        if (target?.closest("[data-ideaforge-topic]")) {
+        if (target?.closest("[data-founderhq-topic]")) {
           e.preventDefault();
           runAnalyze();
         }
@@ -393,26 +393,26 @@ export function IdeaStudio({
             <button
               type="button"
               onClick={() => setMode("create")}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
+              className={`flex flex-1 flex-col items-center justify-center gap-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                 mode === "create"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Sparkles className="size-3.5" />
-              Discover
+              <span className="flex items-center gap-1.5"><Sparkles className="size-3.5" />Discover</span>
+              <span className={`text-[9px] font-normal leading-none mt-0.5 ${mode === "create" ? "text-muted-foreground/70" : "text-muted-foreground/40"}`}>find ideas</span>
             </button>
             <button
               type="button"
               onClick={() => setMode("validate")}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
+              className={`flex flex-1 flex-col items-center justify-center gap-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                 mode === "validate"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Target className="size-3.5" />
-              Validate
+              <span className="flex items-center gap-1.5"><Target className="size-3.5" />Validate</span>
+              <span className={`text-[9px] font-normal leading-none mt-0.5 ${mode === "validate" ? "text-muted-foreground/70" : "text-muted-foreground/40"}`}>check demand</span>
             </button>
             <button
               type="button"
@@ -423,14 +423,14 @@ export function IdeaStudio({
                   setShowFinishConfirm(true);
                 }
               }}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
+              className={`flex flex-1 flex-col items-center justify-center gap-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                 mode === "finish"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Rocket className="size-3.5" />
-              Launch Plan
+              <span className="flex items-center gap-1.5"><Rocket className="size-3.5" />Launch Plan</span>
+              <span className={`text-[9px] font-normal leading-none mt-0.5 ${mode === "finish" ? "text-muted-foreground/70" : "text-muted-foreground/40"}`}>build blueprint</span>
             </button>
           </div>
 
@@ -685,36 +685,52 @@ export function IdeaStudio({
                   <Label htmlFor="topic">Problem space / idea</Label>
                   <Input
                     id="topic"
-                    data-ideaforge-topic
+                    data-founderhq-topic
                     placeholder='e.g. "An app that helps small restaurant owners manage reservations without paying for expensive software"'
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                   />
                 </div>
                 {founderProfile?.goal?.length ? (
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Score is relative to your goal:{" "}
-                    <span className="font-medium text-foreground">{founderProfile.goal.join(", ")}</span>.{" "}
-                    <button
-                      type="button"
-                      className="underline underline-offset-2 hover:text-foreground transition-colors"
-                      onClick={() => onOpenSettings?.(true)}
-                    >
-                      Change in settings
-                    </button>
-                  </p>
+                  <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-muted-foreground leading-snug">
+                        Score calibrated to your <span className="font-medium text-foreground">goal</span> and <span className="font-medium text-foreground">profile</span>.
+                      </p>
+                      <button
+                        type="button"
+                        className="shrink-0 text-xs font-medium text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+                        onClick={() => onOpenSettings?.(true)}
+                      >
+                        Change in settings
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {founderProfile.goal.map((g) => (
+                        <Badge key={g} variant="secondary" className="text-[10px] font-medium">{g}</Badge>
+                      ))}
+                      {founderProfile.role?.length > 0 && (
+                        <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/60">{founderProfile.role.join(", ")}</Badge>
+                      )}
+                      {founderProfile.technicalLevel && (
+                        <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/60">{founderProfile.technicalLevel}</Badge>
+                      )}
+                    </div>
+                  </div>
                 ) : (
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Score is based on general startup viability.{" "}
-                    <button
-                      type="button"
-                      className="underline underline-offset-2 hover:text-foreground transition-colors"
-                      onClick={() => onOpenSettings?.(true)}
-                    >
-                      Set your goal in settings
-                    </button>{" "}
-                    for a score tailored to what you are building.
-                  </p>
+                  <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Score is based on general startup viability.{" "}
+                      <button
+                        type="button"
+                        className="font-medium text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+                        onClick={() => onOpenSettings?.(true)}
+                      >
+                        Set your goal and profile in settings
+                      </button>{" "}
+                      for a score tailored to what you are building.
+                    </p>
+                  </div>
                 )}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
@@ -977,6 +993,8 @@ export function IdeaStudio({
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {mode === "create" && selectedDiscoveryIdea
                   ? `Let's talk about "${selectedDiscoveryIdea.title}". Ask me anything: target user, how to validate it cheaply, first steps, whether it's worth pursuing.`
+                  : mode === "validate" && !activeReport
+                  ? "Run an analysis above first. Once the demand report is ready, use this chat to dig into specific signals, challenge assumptions, or plan your first moves."
                   : chatMeta.emptyState}
               </p>
             )}
@@ -1234,6 +1252,13 @@ function DiscoverResults({
                 ? "Describe a niche or market above, then click Generate. We'll map the startup opportunities you're best positioned to execute."
                 : "Describe a niche or problem above, or set your Founder Profile - the engine maps opportunities matched to your real distribution advantages."}
             </p>
+            <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground/40">
+              <span className="rounded-full border border-border/30 px-2 py-0.5">1 Discover</span>
+              <ArrowRight className="size-2.5" />
+              <span className="rounded-full border border-border/30 px-2 py-0.5">2 Validate</span>
+              <ArrowRight className="size-2.5" />
+              <span className="rounded-full border border-border/30 px-2 py-0.5">3 Launch Plan</span>
+            </div>
           </div>
         )}
 
@@ -1335,13 +1360,13 @@ function DiscoverResults({
                       <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-border/30 pt-2">
                         <span className="text-[10px] text-muted-foreground/50 w-full">Founder fit</span>
                         <FitDot score={fit.skillMatch} />
-                        <span className="text-[10px] text-muted-foreground/40">skill</span>
+                        <span className="text-[10px] text-muted-foreground/40">skill match</span>
                         <FitDot score={fit.distributionAdvantage} />
-                        <span className="text-[10px] text-muted-foreground/40">dist</span>
+                        <span className="text-[10px] text-muted-foreground/40">distribution</span>
                         <FitDot score={fit.executionSpeed} />
-                        <span className="text-[10px] text-muted-foreground/40">speed</span>
+                        <span className="text-[10px] text-muted-foreground/40">exec speed</span>
                         <FitDot score={fit.monetizationFit} />
-                        <span className="text-[10px] text-muted-foreground/40">monet</span>
+                        <span className="text-[10px] text-muted-foreground/40">monetization</span>
                       </div>
                     )}
 

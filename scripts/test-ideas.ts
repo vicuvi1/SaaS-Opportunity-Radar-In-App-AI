@@ -1,5 +1,5 @@
 /**
- * IdeaForge integration test suite — "I have an idea" section
+ * FounderHQ integration test suite — "I have an idea" section
  * Run: npm run test:ideas
  *
  * Tests analyze pipeline end-to-end with real signal fetching + real AI calls.
@@ -331,7 +331,7 @@ const TESTS: Array<{ idea: string; founder: string; shouldPass: boolean; label: 
 
 async function main() {
   console.log(`\n${BOLD}${CYAN}╔══════════════════════════════════════════════════════════════╗`);
-  console.log(`║           IdeaForge — "I Have an Idea" Test Suite             ║`);
+  console.log(`║           FounderHQ — "I Have an Idea" Test Suite             ║`);
   console.log(`╚══════════════════════════════════════════════════════════════╝${RESET}`);
   console.log(dim("Tests run sequentially. Each takes ~30-60s.\n"));
 

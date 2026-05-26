@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       return Response.json(
         {
           error: msg,
-          hint: "Set OPENAI_API_KEY or ANTHROPIC_API_KEY and optionally IDEAFORGE_LLM_PROVIDER.",
+          hint: "Set OPENAI_API_KEY or ANTHROPIC_API_KEY and optionally FOUNDERHQ_LLM_PROVIDER.",
         },
         { status: 503 },
       );

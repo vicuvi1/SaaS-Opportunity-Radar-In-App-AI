@@ -176,9 +176,12 @@ export function GoalSelector({ value, onChange, compact = false }: {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
-        What are you building toward? <span className="text-destructive">*</span>
-      </p>
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
+          What are you building toward? <span className="text-destructive">*</span>
+        </p>
+        <p className="text-[11px] text-muted-foreground/50 mt-0.5">Shapes the depth, GTM focus, and financial projections in your blueprint.</p>
+      </div>
       <div className="flex flex-wrap gap-2">
         {GOAL_OPTIONS.map(goal => {
           const selected = value === goal;

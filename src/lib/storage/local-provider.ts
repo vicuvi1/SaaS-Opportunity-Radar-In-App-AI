@@ -1,8 +1,8 @@
 import type { ForgeThread } from "@/lib/workspace/types";
 import type { StorageProvider, StoredMessage } from "./types";
 
-const THREADS_KEY = "ideaforge_threads_v1";
-const MESSAGES_KEY = (id: string) => `ideaforge_messages_v1_${id}`;
+const THREADS_KEY = "founderhq_threads_v1";
+const MESSAGES_KEY = (id: string) => `founderhq_messages_v1_${id}`;
 
 function readThreads(): ForgeThread[] {
   if (typeof window === "undefined") return [];

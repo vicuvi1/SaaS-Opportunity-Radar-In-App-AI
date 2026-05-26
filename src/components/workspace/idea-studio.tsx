@@ -120,6 +120,7 @@ export function IdeaStudio({
   onUnsaveIdea?: (id: string) => void;
 }) {
   const [mode, setMode] = useState<Mode>("create");
+  const [mobileTab, setMobileTab] = useState<"main" | "chat">("main");
   const modeRef = useRef<Mode>("create");
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
@@ -361,19 +362,38 @@ export function IdeaStudio({
   const chatMeta = CHAT_META[mode];
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-x-hidden">
-      {/* Left: form + results */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* Mobile tab bar */}
+      <div className="flex shrink-0 border-b border-border/70 bg-background md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileTab("main")}
+          className={`flex-1 py-2.5 text-xs font-medium transition-colors ${mobileTab === "main" ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
+        >
+          Workspace
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("chat")}
+          className={`flex-1 py-2.5 text-xs font-medium transition-colors ${mobileTab === "chat" ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
+        >
+          Chat
+        </button>
+      </div>
+
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* Left: form + results */}
+        <div className={`min-h-0 flex-1 flex-col overflow-x-hidden ${mobileTab === "chat" ? "hidden md:flex" : "flex"}`}>
 
         {/* Top panel: mode toggle + mode-specific form */}
-        <div className="glass-panel shrink-0 border-b border-border/70 px-5 py-3">
+        <div className="glass-panel shrink-0 border-b border-border/70 px-3 py-3 sm:px-5">
 
           {/* Mode toggle - always visible */}
-          <div className="mb-3 flex gap-1 rounded-xl border border-border/60 bg-muted/30 p-1 w-fit">
+          <div className="mb-3 flex w-full gap-1 rounded-xl border border-border/60 bg-muted/30 p-1 sm:w-fit">
             <button
               type="button"
               onClick={() => setMode("create")}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                 mode === "create"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -385,7 +405,7 @@ export function IdeaStudio({
             <button
               type="button"
               onClick={() => setMode("validate")}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                 mode === "validate"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -403,7 +423,7 @@ export function IdeaStudio({
                   setShowFinishConfirm(true);
                 }
               }}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
                 mode === "finish"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -914,16 +934,19 @@ export function IdeaStudio({
         </div>
       </div>
 
-      {/* Resize handle */}
+      {/* Resize handle - desktop only */}
       <div
         onMouseDown={onResizeStart}
-        className="group relative flex w-2 shrink-0 cursor-col-resize items-center justify-center bg-muted transition-colors hover:bg-primary/25 active:bg-primary/40"
+        className="group relative hidden w-2 shrink-0 cursor-col-resize items-center justify-center bg-muted transition-colors hover:bg-primary/25 active:bg-primary/40 md:flex"
       >
         <GripVertical className="size-3 text-muted-foreground/50 transition-colors group-hover:text-foreground" />
       </div>
 
       {/* Right: chat panel */}
-      <div className="flex shrink-0 flex-col min-h-0 glass-panel" style={{ width: chatWidth }}>
+      <div
+        className={`flex-col min-h-0 glass-panel ${mobileTab === "main" ? "hidden md:flex" : "flex w-full md:w-auto"} md:flex-none md:shrink-0`}
+        style={mobileTab !== "chat" ? { width: chatWidth } : undefined}
+      >
         <div className="shrink-0 border-b border-border/70 px-4 py-3">
           <p className="text-sm font-semibold">{chatMeta.title}</p>
           <p className="text-xs text-muted-foreground">{chatMeta.description}</p>
@@ -1063,6 +1086,7 @@ export function IdeaStudio({
         </form>
       </div>
 
+      </div>
     </div>
   );
 }

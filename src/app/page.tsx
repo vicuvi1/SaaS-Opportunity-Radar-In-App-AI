@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { ArrowRight, Lightbulb, Rocket, Target, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Lightbulb, Rocket, Target, TrendingUp, AlertCircle, CheckCircle2, BarChart2, User } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "FounderHQ | Validate Startup Ideas Before You Build",
@@ -69,7 +69,7 @@ export default function Home() {
     <div className="noise-overlay relative min-h-[100dvh] overflow-x-hidden bg-background text-foreground">
 
       {/* Nav */}
-      <header className="relative flex h-16 items-center justify-between border-b border-border/70 bg-background px-6 md:px-12">
+      <header className="relative flex h-16 items-center justify-between border-b border-border/70 bg-background px-4 sm:px-6 md:px-12">
         <Image src="/brand/logo/logo-horizontal-dark.png" alt="FounderHQ" height={28} width={140} className="invert" />
         <Link
           href="/workspace"
@@ -80,24 +80,40 @@ export default function Home() {
         </Link>
       </header>
 
-      <div className="relative mx-auto max-w-3xl px-6 md:px-12">
+      <div className="relative mx-auto max-w-3xl px-4 sm:px-6 md:px-12">
 
         {/* Hero */}
-        <section className="pb-16 pt-20 text-center md:pt-28">
-          <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-[3.25rem]">
-            Know if your idea has legs<br />before you build it.
+        <section className="pb-14 pt-16 text-center md:pb-16 md:pt-28">
+          <h1 className="text-[2rem] font-semibold leading-tight tracking-tight sm:text-4xl md:text-[3.25rem] md:leading-[1.08]">
+            Know if your idea has legs<br className="hidden sm:block" /> before you build it.
           </h1>
-          <p className="mx-auto mt-5 max-w-lg text-base text-muted-foreground md:text-lg">
-            FounderHQ pulls real posts from Reddit, Hacker News, GitHub, and Stack Overflow and scores your idea based on your actual goal. Side project, funded startup, or just learning.
+          <p className="mx-auto mt-5 max-w-lg text-sm text-muted-foreground sm:text-base md:text-lg">
+            FounderHQ pulls real posts from Reddit, Hacker News, GitHub, and Stack Overflow and scores your idea based on your actual goal. A side-project founder and a VC-track founder get different scores for the same idea.
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
             <Link
               href="/workspace"
-              className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground shadow-md transition-opacity hover:opacity-90"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-md transition-opacity hover:opacity-90 sm:w-auto sm:py-0 sm:h-11"
             >
               Try it free
               <ArrowRight className="size-4" />
             </Link>
+            <p className="text-xs text-muted-foreground">No credit card needed.</p>
+          </div>
+        </section>
+
+        {/* Founder profile callout */}
+        <section className="mb-12 -mt-4">
+          <div className="flex items-start gap-4 rounded-2xl border border-border/70 bg-card px-5 py-4">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 mt-0.5">
+              <User className="size-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Everything is calibrated to you</p>
+              <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">
+                Before you run anything, FounderHQ collects your background: role, skills, communities you are in, your goal, and how you want to monetize. Every score, every idea, and every plan adjusts based on who you actually are.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -109,8 +125,8 @@ export default function Home() {
           </p>
           <div className="space-y-4">
 
-            {/* Mode 1 */}
-            <div className="rounded-2xl border border-border/70 bg-card p-6">
+            {/* Mode 1 - Discover */}
+            <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6">
               <div className="flex items-start gap-4">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <Lightbulb className="size-4 text-primary" />
@@ -121,10 +137,37 @@ export default function Home() {
                     <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">Mode 1</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                    No idea yet? Tell FounderHQ your background, what you have built before, and what you are trying to do. It finds startup opportunities that match who you actually are, not just topics you find interesting. Each idea gets scored on whether you can reach customers and whether it fits your goal. Save the ones worth a second look.
+                    No idea yet? FounderHQ maps 3 opportunity zones based on your specific distribution access and workflow knowledge, then generates 2-3 targeted ideas per zone. Not topics you find interesting, but markets where you can actually reach customers. Each idea is scored on 4 founder fit dimensions and an overall opportunity score. Save the ones worth pursuing.
                   </p>
+
+                  {/* Founder fit score preview */}
+                  <div className="mt-4 overflow-hidden rounded-xl border border-border/60 bg-background/60">
+                    <div className="border-b border-border/50 px-4 py-2.5">
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Founder Fit Score</span>
+                    </div>
+                    <div className="px-4 py-3 space-y-2">
+                      {[
+                        { label: "Skill match", value: 8 },
+                        { label: "Distribution advantage", value: 9 },
+                        { label: "Execution speed", value: 7 },
+                        { label: "Monetization fit", value: 8 },
+                      ].map((item) => (
+                        <div key={item.label} className="flex items-center gap-3">
+                          <span className="w-24 shrink-0 text-[11px] text-muted-foreground sm:w-36">{item.label}</span>
+                          <div className="h-1.5 flex-1 rounded-full bg-muted/50">
+                            <div
+                              className="h-full rounded-full bg-primary/60"
+                              style={{ width: `${item.value * 10}%` }}
+                            />
+                          </div>
+                          <span className="w-4 shrink-0 text-right text-[11px] text-muted-foreground">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {["Opportunity map", "Founder fit scores", "Brainstorm chat", "Save ideas"].map((t) => (
+                    {["3 opportunity zones", "Founder fit scores", "Brainstorm chat", "Save to idea library"].map((t) => (
                       <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-[11px] text-muted-foreground">{t}</span>
                     ))}
                   </div>
@@ -132,8 +175,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Mode 2 */}
-            <div className="rounded-2xl border border-primary/30 bg-card p-6 ring-1 ring-primary/10">
+            {/* Mode 2 - Validate */}
+            <div className="rounded-2xl border border-primary/30 bg-card p-4 ring-1 ring-primary/10 sm:p-6">
               <div className="flex items-start gap-4">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <Target className="size-4 text-primary" />
@@ -145,10 +188,10 @@ export default function Home() {
                     <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Core feature</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                    Paste your idea. FounderHQ fetches up to 70 real posts from Reddit, HN, GitHub, Stack Overflow, and Product Hunt, then scores it based on your goal. A side project founder and a VC-track founder get different scores for the same idea. The report tells you exactly why.
+                    Paste your idea. FounderHQ fetches up to 70 real posts across 5 sources, then issues a verdict and a Build Gate Score calibrated to your goal. The same idea can score very differently depending on whether you are building a side project or raising a seed round. The report tells you exactly why.
                   </p>
 
-                  {/* Mini report preview */}
+                  {/* Report preview */}
                   <div className="mt-4 overflow-hidden rounded-xl border border-border/60 bg-background/60">
                     <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
                       <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Build Gate Score</span>
@@ -160,10 +203,23 @@ export default function Home() {
                         <span className="text-sm text-muted-foreground">/ 100</span>
                         <span className="ml-2 text-[11px] text-muted-foreground">Scored for: profitable side project</span>
                       </div>
+                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-2">
+                        {[
+                          { label: "Monetization potential", value: 71 },
+                          { label: "Ease of acquisition", value: 58 },
+                          { label: "Competition intensity", value: 62 },
+                          { label: "Founder viability", value: 80 },
+                        ].map((s) => (
+                          <div key={s.label} className="rounded-lg border border-border/40 bg-muted/20 px-2.5 py-2">
+                            <p className="text-[10px] text-muted-foreground leading-tight">{s.label}</p>
+                            <p className="mt-0.5 text-sm font-medium">{s.value}</p>
+                          </div>
+                        ))}
+                      </div>
                       <div className="space-y-1.5">
                         <div className="flex items-start gap-2">
                           <TrendingUp className="mt-0.5 size-3 shrink-0 text-primary" />
-                          <p className="text-xs text-muted-foreground">Multiple users mention paying $30-50/mo for tools that only partially solve this.</p>
+                          <p className="text-xs text-muted-foreground">Multiple users mention paying $30-50/mo for tools that only partially solve this. <span className="text-primary/70">[WTP]</span></p>
                         </div>
                         <div className="flex items-start gap-2">
                           <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-emerald-500" />
@@ -178,7 +234,7 @@ export default function Home() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {["Real snippets, sourced", "Goal-calibrated score", "Don't-build warnings", "Follow-up chat"].map((t) => (
+                    {["5 verdict tiers", "4 probability scores", "WTP evidence markers", "Don't-build warnings", "Follow-up chat"].map((t) => (
                       <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-[11px] text-muted-foreground">{t}</span>
                     ))}
                   </div>
@@ -186,8 +242,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Mode 3 */}
-            <div className="rounded-2xl border border-border/70 bg-card p-6">
+            {/* Mode 3 - Launch Plan */}
+            <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-6">
               <div className="flex items-start gap-4">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <Rocket className="size-4 text-primary" />
@@ -198,10 +254,36 @@ export default function Home() {
                     <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">Mode 3</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                    Your idea scored well. Now what? Finisher builds the full plan: MVP scope, pricing, GTM steps, and real competitor breakdowns with actual URLs. It also writes your Lovable, v0, and Cursor prompts, a Reddit launch post, a cold outreach script, and landing page copy. Not templates you fill in yourself.
+                    Your idea scored well. Now what? Pick your goal tier and FounderHQ builds the full plan. MVP scope, competitor breakdowns, a 30-day roadmap, financial projections, and a complete build specification (800+ words) you can paste directly into Lovable, v0, or Cursor to start building immediately. It also writes your Reddit launch post, cold outreach script, and landing page copy. Not templates you fill in yourself.
                   </p>
+
+                  {/* Goal tiers */}
+                  <div className="mt-4 overflow-hidden rounded-xl border border-border/60 bg-background/60">
+                    <div className="border-b border-border/50 px-4 py-2.5">
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Goal tiers</span>
+                    </div>
+                    <div className="divide-y divide-border/40">
+                      {[
+                        { label: "Fun project", sub: "Ship fast, learn, low commercial pressure" },
+                        { label: "Profitable side project", sub: "Revenue-first, bootstrapper assumptions, $1-5K MRR path" },
+                        { label: "Bootstrapped business", sub: "Full 12-month plan with cash flow depth" },
+                        { label: "Funded startup", sub: "Investor-grade: TAM/SAM/SOM, unit economics, raise strategy" },
+                        { label: "Still figuring it out", sub: "Maps your options honestly before you commit" },
+                      ].map((tier) => (
+                        <div key={tier.label} className="flex items-start gap-3 px-4 py-2.5">
+                          <BarChart2 className="mt-0.5 size-3 shrink-0 text-primary/50" />
+                          <div>
+                            <span className="text-xs font-medium">{tier.label}</span>
+                            <span className="mx-1.5 text-muted-foreground/40 text-xs">·</span>
+                            <span className="text-xs text-muted-foreground">{tier.sub}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {["MVP definition", "Competitor analysis", "30-day roadmap", "Lovable / v0 / Cursor prompts", "Reddit + outreach drafts"].map((t) => (
+                    {["MVP definition", "Competitor analysis", "30-day roadmap", "800-word Lovable / v0 / Cursor prompt", "Reddit + outreach drafts", "Financial projections"].map((t) => (
                       <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-[11px] text-muted-foreground">{t}</span>
                     ))}
                   </div>
@@ -214,7 +296,7 @@ export default function Home() {
 
         {/* Data sources */}
         <section className="pb-20">
-          <div className="rounded-2xl border border-border/70 bg-card px-6 py-5">
+          <div className="rounded-2xl border border-border/70 bg-card px-4 py-5 sm:px-6">
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">Where the evidence comes from</p>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               {[
@@ -231,19 +313,19 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">Up to 70 posts pulled per run, deduplicated. Every report shows you which sources were searched and the exact post count from each one.</p>
+            <p className="mt-3 text-xs text-muted-foreground">Up to 70 posts pulled per run, deduplicated. Every report shows which sources were searched and the exact post count from each one.</p>
           </div>
         </section>
 
         {/* CTA */}
-        <section className="mb-20 rounded-2xl border border-border/70 bg-card px-8 py-12 text-center">
+        <section className="mb-20 rounded-2xl border border-border/70 bg-card px-5 py-10 text-center sm:px-8 sm:py-12">
           <h2 className="text-xl font-semibold tracking-tight">Build something people actually want.</h2>
           <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
             Most founders find out their idea was wrong after building it. FounderHQ shows you the evidence first.
           </p>
           <Link
             href="/workspace"
-            className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 sm:w-auto sm:py-0 sm:h-10"
           >
             Open FounderHQ
             <ArrowRight className="size-4" />
@@ -252,7 +334,7 @@ export default function Home() {
 
       </div>
 
-      <footer className="border-t border-border/70 px-6 py-5 text-center text-xs text-muted-foreground">
+      <footer className="border-t border-border/70 px-4 py-5 text-center text-xs text-muted-foreground">
         FounderHQ. Do your homework before you ship.
       </footer>
 

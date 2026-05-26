@@ -41,6 +41,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  List,
   Loader2,
   PanelRight,
   Plus,
@@ -77,6 +78,7 @@ export function Workspace() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [activeMessages, setActiveMessages] = useState<UIMessage[]>([]);
@@ -409,17 +411,27 @@ export function Workspace() {
             <p className="truncate text-[11px] text-muted-foreground/90">Do your homework before you ship.</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 border-border/70 bg-background/70 md:hidden"
+            onClick={() => setMobileSidebarOpen(true)}
+          >
+            <List className="size-3.5" />
+            <span className="hidden xs:inline">Sessions</span>
+          </Button>
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="gap-2 border-border/70 bg-background/70 md:hidden"
+              className="gap-1.5 border-border/70 bg-background/70 md:hidden"
               onClick={() => setSheetOpen(true)}
             >
               <PanelRight className="size-3.5" />
-              Report
+              <span className="hidden xs:inline">Report</span>
             </Button>
             <SheetContent
               side="right"
@@ -456,10 +468,89 @@ export function Workspace() {
         onProfileUpdate={setFounderProfile}
       />
 
+      {/* Mobile sessions sheet */}
+      <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+        <SheetContent side="left" className="flex h-full w-72 flex-col gap-0 border-r p-0">
+          <SheetHeader className="border-b border-border/70 px-4 py-3 text-left">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-sm font-semibold">Sessions</SheetTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => { createThread(); setMobileSidebarOpen(false); }}
+                aria-label="New session"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+          </SheetHeader>
+          <div className="border-b border-border/70 p-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search..."
+                className="h-8 border-border/70 bg-background/60 pl-8 text-xs"
+              />
+            </div>
+          </div>
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="flex flex-col gap-0.5 p-2">
+              {filtered.map((t) => (
+                <div
+                  key={t.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { selectThread(t.id); setMobileSidebarOpen(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { selectThread(t.id); setMobileSidebarOpen(false); } }}
+                  className={`group flex cursor-pointer items-start gap-1 rounded-lg border px-2 py-2 text-left transition-all duration-150 hover:bg-muted/55 ${
+                    t.id === activeId ? "border-primary/40 bg-primary/10" : "border-transparent"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <FileText className="size-3 shrink-0 text-muted-foreground" />
+                      <span className="truncate text-xs font-medium">{t.title}</span>
+                    </div>
+                    {t.topic ? (
+                      <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground/80">{t.topic}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 flex-col">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      className={`opacity-30 hover:opacity-100 ${t.favorite ? "!opacity-100 text-amber-400" : ""}`}
+                      aria-label={t.favorite ? "Unfavorite" : "Favorite"}
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(t.id); }}
+                    >
+                      <Star className="size-3" fill={t.favorite ? "currentColor" : "none"} />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="opacity-30 hover:opacity-100 hover:text-destructive"
+                      aria-label="Delete session"
+                      onClick={(e) => { e.stopPropagation(); deleteThread(t.id); }}
+                    >
+                      <Trash2 className="size-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
       <div className="flex min-h-0 flex-1">
-        {/* Sidebar - always visible regardless of loading state */}
+        {/* Sidebar - desktop only */}
         <aside
-          className={`flex shrink-0 flex-col border-r border-border/70 bg-card transition-[width] duration-200 ${
+          className={`hidden shrink-0 flex-col border-r border-border/70 bg-card transition-[width] duration-200 md:flex ${
             sidebarOpen ? "w-[240px]" : "w-12"
           } overflow-hidden`}
         >

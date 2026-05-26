@@ -33,7 +33,7 @@ import {
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-3">
+    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
       {children}
     </p>
   );
@@ -57,7 +57,7 @@ function ProfileSummary({ profile }: { profile: FounderProfile }) {
       {tags.map((tag) => (
         <span
           key={tag}
-          className="rounded-full border border-border/50 bg-muted/40 px-2.5 py-1 text-[11px] text-foreground/80"
+          className="rounded-full border border-border/50 bg-muted/40 px-2.5 py-1 text-xs text-foreground/80"
         >
           {tag}
         </span>
@@ -226,7 +226,7 @@ export function SettingsPanel({
                   onKeyDown={(e) => e.key === "Enter" && setProfileExpanded(true)}
                   className="cursor-pointer rounded-xl border border-border/60 bg-card/40 px-4 py-3 space-y-2 hover:border-border/90 transition-colors"
                 >
-                  <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">
                     Used by the Opportunity Engine to match ideas to you.
                   </p>
                   {founderProfile ? (
@@ -236,7 +236,7 @@ export function SettingsPanel({
                       No profile set. Click to fill in your details.
                     </p>
                   )}
-                  <p className="text-[10px] text-muted-foreground/40 flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <ChevronDown className="size-3" />
                     Click to edit
                   </p>
@@ -304,7 +304,7 @@ export function SettingsPanel({
                 <div className="rounded-xl border border-red-500/30 bg-red-500/[0.06] p-4 space-y-3">
                   <p className="text-xs font-semibold text-foreground">Delete account</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Permanently deletes your account, all sessions, all reports, and all chat history. This cannot be undone.
+                    Permanently deletes your account, all sessions, all reports, and all chat history. Any remaining credits will be lost and your email cannot be used to claim free credits again. This cannot be undone.
                   </p>
                   <Button
                     type="button"

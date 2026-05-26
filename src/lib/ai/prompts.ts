@@ -706,52 +706,56 @@ export const REFINER_SYSTEM = `You are FounderHQ - a startup strategist helping 
   ─── AREA 4: EXECUTION MATERIALS ───────────────────────────────
   - opportunityWedge: specific angles - underserved audience, ignored workflow, pricing gap, UX gap, AI leverage
   - founderFit: honest skills match, build timeline, difficulty, technical complexity
-  - buildArtifacts: detailed enough for a developer to start building immediately.
-    - buildPrompt: ONE comprehensive, self-contained build specification. A developer pastes this into Claude Code, Cursor, Lovable, v0, or any AI coding tool and immediately knows exactly what to build. This field MUST be at minimum 800 words — do not summarize, write every section in full. Structure it with these exact sections, each fully expanded:
+  - buildArtifacts: detailed enough for a founder to start executing immediately.
+    - buildPrompt: ONE comprehensive, self-contained execution specification. MUST be at minimum 800 words. CRITICAL: adapt every section to the actual business type — do NOT default to a software app spec for service businesses or physical products.
 
-      ## [App Name] — Build Specification
-      One sentence: what it does and who it's for.
+      BUSINESS TYPE RULES:
+      - If software/app/SaaS: write a developer build spec (tech stack, features, auth, deployment).
+      - If service business (consulting, agency, coaching, tutoring, productized service, etc.): write an operations plan (service definition, delivery model, pricing, capacity, how to find first clients, tools needed, weekly workflow).
+      - If physical product (manufactured goods, CPG, hardware, physical goods): write a launch plan (product specs, sourcing/manufacturing approach, unit economics, fulfillment, packaging, first sales channel).
 
-      ## Problem & User
-      2-3 sentences: the exact pain, who has it, and what they currently do instead.
-
-      ## Tech Stack
-      List the specific framework, database, auth provider, hosting, and any key libraries — with one sentence of rationale for each choice. Name actual technologies (e.g. "Next.js 14 App Router", "Supabase", "Clerk", "Vercel", "Stripe", "Tailwind + shadcn/ui").
-
-      ## V1 Feature Set (ship these)
-      5-8 specific features with a 1-2 sentence description of each. Be concrete about what each feature actually does.
-
+      For software, include these sections fully expanded:
+      ## [Product Name] — Build Specification
+      ## Problem & Customer
+      ## Tech Stack (name actual tools with rationale)
+      ## V1 Feature Set (5-8 features, 1-2 sentences each)
       ## Explicitly Out of Scope for V1
-      4-6 things that will NOT be in v1, with a one-line reason for each exclusion.
-
-      ## Database Schema
-      List every table with its key columns and data types. Include foreign key relationships. Write this as actual schema definitions, not vague descriptions.
-
       ## Key API Routes / Server Actions
-      List 6-10 routes: HTTP method, path, and what it does. For server actions, describe the function name and what it handles.
-
       ## Auth & Payments
-      Describe the exact auth flow (which provider, what happens on sign-up/login, session handling). For payments: which provider, what the checkout flow looks like, how subscriptions or credits work.
-
-      ## UI/UX Direction
-      Name the key screens (3-6) and describe what's on each one. Include the overall design direction (color palette, component library, tone). Describe the main user flow from sign-up to first value.
-
+      ## UI/UX Direction (key screens, main user flow)
       ## File & Folder Structure
-      Show the actual directory layout: which files go where, how the project is organized. Include key filenames.
-
-      ## Build Order (numbered steps)
-      10-15 sequential steps a developer should follow, from project setup to deployment. Each step is specific and actionable — not "build the frontend" but "scaffold Next.js project with Tailwind and shadcn/ui, configure Supabase connection, set up auth middleware."
-
+      ## Build Order (10-15 numbered steps from setup to deployment)
       ## How to Test It's Working
-      3-5 specific test scenarios: what to click, what to enter, what the expected result is. Include an end-to-end smoke test.
-
       ## Deployment
-      Specific deployment target and the exact steps to go live (e.g. "Deploy to Vercel: connect GitHub repo, set env vars X Y Z, enable Edge Runtime for middleware").
 
-      Write every section fully. No placeholders. No "add your X here." Make real decisions and name real tools.
-    - mvpFeatures, dbSchema, architecture, authPayments, landingCopy, pricingIdeas, onboardingFlow, roadmap30Day
+      For service businesses, replace the above with:
+      ## [Service Name] — Launch Plan
+      ## Problem & Customer (who you serve, their pain, what they currently do instead)
+      ## Service Definition (exactly what is delivered, how, and in what timeframe)
+      ## Delivery Model (remote vs in-person, async vs live, session length, capacity per week)
+      ## Pricing & Packaging (specific price points, tiers, what's included, payment terms)
+      ## Tools & Setup (the exact tools needed to deliver and run the business - name them)
+      ## How to Find First 10 Clients (specific outreach steps, communities, channels)
+      ## Weekly Operating Workflow (what a typical week looks like at capacity)
+      ## First 30 Days (numbered action steps from day 1 to first paying client)
+      ## How to Know It's Working (3-5 specific signals: booked calls, paid invoices, referrals)
+
+      For physical products, replace with:
+      ## [Product Name] — Launch Plan
+      ## Problem & Customer
+      ## Product Definition (specs, materials, variants, packaging)
+      ## Sourcing & Manufacturing (supplier type, MOQ, unit cost target, lead times)
+      ## Unit Economics (COGS, target retail price, margin, breakeven quantity)
+      ## Fulfillment (storage, shipping method, carrier, packaging cost)
+      ## First Sales Channel (which platform or channel to launch on first and why)
+      ## Pre-Launch Validation (how to get 10 pre-orders before placing first PO)
+      ## Launch Sequence (numbered steps from first prototype to first 50 units sold)
+      ## How to Know It's Working
+
+      Write every section fully. No placeholders. Make real decisions and name real tools/suppliers/channels.
+    - mvpFeatures, authPayments, pricingIdeas, onboardingFlow, roadmap30Day
   - validationPack: ready-to-send real content (not templates):
-    - redditPostDraft, twitterLaunchDraft, landingPageCopy, waitlistCopy, interviewQuestions, coldOutreachScript, communityPlan
+    - redditPostDraft, twitterLaunchDraft, waitlistCopy, interviewQuestions, coldOutreachScript, communityPlan
 
   ─── AREA 5: BUSINESS PLAN SECTIONS ────────────────────────────
   Generate these sections calibrated to the plan goal. They form the formal business plan document.
@@ -883,19 +887,15 @@ Be opinionated. Make decisions. Never hedge with "you could do X or Y."
 AREA 4: EXECUTION MATERIALS
 - founderFit: honest skills match, build timeline (weeks not months for this tier), difficulty (should be low/medium), technical complexity
 - buildArtifacts:
-  - buildPrompt: ONE comprehensive, self-contained build spec at minimum 800 words. Include: app name + one sentence what it does, Problem and User section, Tech Stack with rationale (name actual tools), V1 Feature Set (5-8 features with descriptions), Out of Scope for V1, Database Schema (tables and key columns), Key API Routes, Auth and Payments, UI/UX Direction (key screens), File and Folder Structure, Build Order (10-15 numbered steps), How to Test, Deployment. Scale for a fast side project - no enterprise architecture.
+  - buildPrompt: ONE comprehensive, self-contained execution spec at minimum 800 words. Adapt to the actual business type - do NOT write a software spec for a service or physical product. For software: include Tech Stack (actual tools), V1 Feature Set (5-8 features), Out of Scope, Key API Routes, Auth and Payments, UI/UX Direction, File Structure, Build Order (10-15 steps), Testing, Deployment. For a service business: write a service launch plan (service definition, delivery model, pricing, tools, how to find first clients, weekly workflow, first 30 days). For a physical product: write a product launch plan (specs, sourcing, unit economics, fulfillment, first sales channel, pre-launch validation). Scale for a fast side project.
   - mvpFeatures: list of MVP features
-  - dbSchema: key tables and columns
-  - architecture: simple architecture summary
   - authPayments: auth flow and payment setup if applicable
-  - landingCopy: landing page headline and subheading copy
   - pricingIdeas: 2-3 simple pricing ideas
   - onboardingFlow: first-time user experience
   - roadmap30Day: 30-day build and ship roadmap
 - validationPack: real content (not templates):
   - redditPostDraft: a draft post to share for feedback
   - twitterLaunchDraft: a tweet to announce the project
-  - landingPageCopy: landing page copy
   - waitlistCopy: waitlist or interest form copy
   - interviewQuestions: 5-8 questions to ask potential users
   - coldOutreachScript: a direct message to someone who might find this useful
@@ -954,9 +954,9 @@ AREA 3: MARKET CONTEXT
 AREA 4: EXECUTION MATERIALS
 - opportunityWedge: underserved audience, ignored workflow, pricing gap, UX gap, AI leverage, speed advantage
 - founderFit: honest skills match, difficulty, build timeline, technical complexity
-- buildArtifacts: full detail - buildPrompt at minimum 800 words with all sections (Tech Stack, V1 Feature Set, Out of Scope, Database Schema, Key API Routes, Auth and Payments, UI/UX Direction, File Structure, Build Order, Testing, Deployment). No enterprise over-engineering.
-  - mvpFeatures, dbSchema, architecture, authPayments, landingCopy, pricingIdeas, onboardingFlow, roadmap30Day
-- validationPack: ready-to-send real content - redditPostDraft, twitterLaunchDraft, landingPageCopy, waitlistCopy, interviewQuestions, coldOutreachScript, communityPlan
+- buildArtifacts: full detail - buildPrompt at minimum 800 words. Adapt to the actual business type. For software: include Tech Stack, V1 Feature Set, Out of Scope, Key API Routes, Auth and Payments, UI/UX Direction, File Structure, Build Order (10-15 steps), Testing, Deployment. For a service business: write a service launch plan (service definition, delivery model, pricing, tools, first client acquisition, weekly workflow, 30-day action plan). For a physical product: write a product launch plan (specs, sourcing, unit economics, fulfillment, first channel, pre-launch validation). No enterprise over-engineering.
+  - mvpFeatures, authPayments, pricingIdeas, onboardingFlow, roadmap30Day
+- validationPack: ready-to-send real content - redditPostDraft, twitterLaunchDraft, waitlistCopy, interviewQuestions, coldOutreachScript, communityPlan
 
 AREA 5: BUSINESS PLAN SECTIONS (real indie depth)
 
@@ -1044,8 +1044,8 @@ AREA 3: MARKET CONTEXT
 AREA 4: EXECUTION MATERIALS
 - opportunityWedge: underserved audience, ignored workflow, pricing gap, UX gap, AI leverage, speed advantage
 - founderFit: skills match, difficulty, build timeline, technical complexity
-- buildArtifacts: comprehensive and investor-calibrated. buildPrompt at MINIMUM 800 words — write every section in full, no summaries. Required sections: App Name + one-sentence description, Problem and User (2-3 sentences), Tech Stack (name actual tools with rationale), V1 Feature Set (5-8 features, 1-2 sentences each), Explicitly Out of Scope for V1, Database Schema (tables and key columns), Key API Routes (6-10), Auth and Payments (exact flow), UI/UX Direction (key screens 3-6), File and Folder Structure, Build Order (10-15 numbered steps), How to Test, Deployment. Enterprise considerations where relevant. mvpFeatures, dbSchema, architecture, authPayments, landingCopy, pricingIdeas, onboardingFlow, roadmap30Day
-- validationPack: redditPostDraft, twitterLaunchDraft, landingPageCopy, waitlistCopy, interviewQuestions, coldOutreachScript, communityPlan
+- buildArtifacts: comprehensive and investor-calibrated. buildPrompt at MINIMUM 800 words — write every section in full, no summaries. Adapt to the actual business type. For software: Problem and User (2-3 sentences), Tech Stack (name actual tools with rationale), V1 Feature Set (5-8 features, 1-2 sentences each), Out of Scope for V1, Key API Routes (6-10), Auth and Payments (exact flow), UI/UX Direction (key screens 3-6), File and Folder Structure, Build Order (10-15 numbered steps), How to Test, Deployment. Enterprise considerations where relevant. For a service business: write a full operations and growth plan (service definition, delivery model, pricing, capacity, hiring plan, client acquisition, tools, 30-day launch sequence). For physical product: full product launch plan (specs, sourcing, unit economics, fulfillment, sales channels, funding needs for inventory). mvpFeatures, authPayments, pricingIdeas, onboardingFlow, roadmap30Day
+- validationPack: redditPostDraft, twitterLaunchDraft, waitlistCopy, interviewQuestions, coldOutreachScript, communityPlan
 
 AREA 5: BUSINESS PLAN SECTIONS (investor grade)
 
@@ -1141,8 +1141,8 @@ AREA 3: MARKET CONTEXT
 AREA 4: EXECUTION MATERIALS (exploratory calibration)
 - opportunityWedge: underserved audience, ignored workflow, pricing gap, UX gap, AI leverage, speed advantage
 - founderFit: honest skills match, difficulty, build timeline - calibrated to the most realistic path
-- buildArtifacts: practical and minimum viable. buildPrompt at MINIMUM 800 words - write this for the recommended primary path identified in businessTypeAnalysis. Required sections: App Name + one-sentence description, Problem and User, Tech Stack (name actual tools), V1 Feature Set (5-8 features), Out of Scope for V1, Database Schema, Key API Routes, Auth and Payments, UI/UX Direction (key screens), File and Folder Structure, Build Order (10-15 numbered steps), How to Test, Deployment. No over-engineering. mvpFeatures, dbSchema, architecture, authPayments, landingCopy, pricingIdeas, onboardingFlow, roadmap30Day
-- validationPack: ready-to-use content for cheap validation - redditPostDraft, twitterLaunchDraft, landingPageCopy, waitlistCopy, interviewQuestions, coldOutreachScript, communityPlan
+- buildArtifacts: practical and minimum viable. buildPrompt at MINIMUM 800 words - write this for the recommended primary path identified in businessTypeAnalysis. CRITICAL: match the spec to the actual business type identified. For software: Problem and User, Tech Stack (name actual tools), V1 Feature Set (5-8 features), Out of Scope, Key API Routes, Auth and Payments, UI/UX Direction, File Structure, Build Order (10-15 steps), Testing, Deployment. For a service business: write a service launch plan (service definition, delivery, pricing, tools, how to land first clients, 30-day sequence). For a physical product: product launch plan (specs, sourcing, unit economics, fulfillment, first sales channel). No over-engineering. mvpFeatures, authPayments, pricingIdeas, onboardingFlow, roadmap30Day
+- validationPack: ready-to-use content for cheap validation - redditPostDraft, twitterLaunchDraft, waitlistCopy, interviewQuestions, coldOutreachScript, communityPlan
 
 AREA 5: BUSINESS PLAN SECTIONS (exploratory depth)
 

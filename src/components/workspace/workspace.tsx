@@ -43,13 +43,15 @@ import {
   FileText,
   List,
   Loader2,
-  PanelRight,
   Plus,
   Search,
   Settings,
   Star,
   Trash2,
 } from "lucide-react";
+import { CreditsBadge } from "@/components/credits/credits-badge";
+import { BuyCreditsModal } from "@/components/credits/buy-credits-modal";
+import { useCredits } from "@/components/credits/use-credits";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function newBlankThread(): ForgeThread {
@@ -75,7 +77,6 @@ export function Workspace() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [liveReport, setLiveReport] = useState<DeepPartial<IdeaReport> | undefined>();
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -87,6 +88,8 @@ export function Workspace() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>([]);
+  const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
+  const { credits, loading: creditsLoading, refresh: refreshCredits } = useCredits();
   // Stable ref to supabase client for use inside saved-idea callbacks.
   const supabaseRef = useRef<ReturnType<typeof createClient>>(null);
 
@@ -406,12 +409,23 @@ export function Workspace() {
       <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Image src="/brand/mark/mark-white.png" alt="FounderHQ" width={56} height={56} className="shrink-0" />
-          <div className="min-w-0">
+          <div className="hidden min-w-0 sm:block">
             <p className="truncate text-sm font-semibold tracking-tight">FounderHQ</p>
-            <p className="truncate text-[11px] text-muted-foreground/90">Do your homework before you ship.</p>
+            <p className="truncate text-xs text-muted-foreground">Do your homework before you ship.</p>
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <CreditsBadge
+            credits={credits}
+            loading={creditsLoading}
+            onClick={() => setBuyCreditsOpen(true)}
+          />
+          <BuyCreditsModal
+            open={buyCreditsOpen}
+            onOpenChange={setBuyCreditsOpen}
+            currentCredits={credits}
+            onPurchased={refreshCredits}
+          />
           <Button
             type="button"
             variant="outline"
@@ -422,31 +436,6 @@ export function Workspace() {
             <List className="size-3.5" />
             <span className="hidden xs:inline">Sessions</span>
           </Button>
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5 border-border/70 bg-background/70 md:hidden"
-              onClick={() => setSheetOpen(true)}
-            >
-              <PanelRight className="size-3.5" />
-              <span className="hidden xs:inline">Report</span>
-            </Button>
-            <SheetContent
-              side="right"
-              className="flex h-full w-full flex-col gap-0 border-l p-0 sm:max-w-xl"
-            >
-              <SheetHeader className="border-b px-4 py-3 text-left">
-                <SheetTitle className="text-sm font-semibold">
-                  Live report
-                </SheetTitle>
-              </SheetHeader>
-              <div className="min-h-0 flex-1 overflow-hidden">
-                <ReportPanel partial={liveReport} streaming={analyzing} />
-              </div>
-            </SheetContent>
-          </Sheet>
           <Button
             type="button"
             variant="ghost"
@@ -472,8 +461,7 @@ export function Workspace() {
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetContent side="left" className="flex h-full w-72 flex-col gap-0 border-r p-0">
           <SheetHeader className="border-b border-border/70 px-4 py-3 text-left">
-            <div className="flex items-center justify-between">
-              <SheetTitle className="text-sm font-semibold">Sessions</SheetTitle>
+            <div className="flex items-center gap-2 pr-6">
               <Button
                 type="button"
                 variant="ghost"
@@ -483,6 +471,7 @@ export function Workspace() {
               >
                 <Plus className="size-4" />
               </Button>
+              <SheetTitle className="text-sm font-semibold">Sessions</SheetTitle>
             </div>
           </SheetHeader>
           <div className="border-b border-border/70 p-2">
@@ -515,7 +504,7 @@ export function Workspace() {
                       <span className="truncate text-xs font-medium">{t.title}</span>
                     </div>
                     {t.topic ? (
-                      <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground/80">{t.topic}</p>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{t.topic}</p>
                     ) : null}
                   </div>
                   <div className="flex shrink-0 flex-col">
@@ -574,7 +563,7 @@ export function Workspace() {
               <Plus className="size-4" />
             </Button>
             {sidebarOpen && (
-              <p className="ml-1 truncate text-[11px] font-semibold text-muted-foreground">
+              <p className="ml-1 truncate text-xs font-semibold text-muted-foreground">
                 Sessions
               </p>
             )}
@@ -587,7 +576,7 @@ export function Workspace() {
               className="flex flex-1 cursor-pointer items-center justify-center"
               aria-label="Open sessions sidebar"
             >
-              <span className="select-none text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 [writing-mode:vertical-rl] rotate-180">
+              <span className="select-none text-xs font-semibold uppercase tracking-widest text-muted-foreground [writing-mode:vertical-rl] rotate-180">
                 Sessions
               </span>
             </button>
@@ -595,7 +584,7 @@ export function Workspace() {
 
           {sidebarOpen && (
             <>
-              <p className="px-3 pt-2 pb-1 text-[10px] text-muted-foreground/60 leading-relaxed">
+              <p className="px-3 pt-2 pb-1 text-xs text-muted-foreground leading-relaxed">
                 Your saved idea sessions. Each one stores the full report and chat history.
               </p>
               <div className="border-b border-border/70 p-2">
@@ -630,7 +619,7 @@ export function Workspace() {
                           <span className="truncate text-xs font-medium">{t.title}</span>
                         </div>
                         {t.topic ? (
-                          <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground/80">
+                          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
                             {t.topic}
                           </p>
                         ) : null}
@@ -689,6 +678,8 @@ export function Workspace() {
             onNewThread={createThread}
             founderProfile={founderProfile}
             onOpenSettings={() => setSettingsOpen(true)}
+            onBuyCredits={() => setBuyCreditsOpen(true)}
+            onRefreshCredits={refreshCredits}
             savedIdeas={savedIdeas}
             onSaveIdea={handleSaveIdea}
             onUnsaveIdea={handleUnsaveIdea}

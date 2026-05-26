@@ -156,7 +156,7 @@ export function SignInCard({ onClose }: { onClose?: () => void }) {
           Continue with Google
         </Button>
 
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <Separator className="flex-1" />
           or email and password
           <Separator className="flex-1" />

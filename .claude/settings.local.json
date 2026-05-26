@@ -47,7 +47,10 @@
       "Bash(node -e \"const zod = require\\('zod'\\); console.log\\(zod.version || 'no version field'\\)\")",
       "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('zod:', p.dependencies.zod\\)\")",
       "Bash(del \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\scripts\\\\test-finisher-rerun.ts\")",
-      "Bash(Remove-Item \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\src\\\\middleware.ts\")"
+      "Bash(Remove-Item \"c:\\\\Users\\\\bosto\\\\idea maker\\\\ideaforge\\\\src\\\\middleware.ts\")",
+      "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(s.LATEST_API_VERSION\\)\")",
+      "Bash(node -e \"const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_x'\\); console.log\\(s.VERSION\\)\")",
+      "Bash(node -e \"const t = require\\('./node_modules/stripe/dist/stripe.js'\\); const s = new t.default\\('sk_test_x'\\); console.log\\(s._api.version\\)\")"
     ]
   }
 }

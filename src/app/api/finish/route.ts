@@ -4,20 +4,15 @@ import { extractSearchQuery } from "@/lib/demand/extract-query";
 import { getFinisherModel } from "@/lib/ai/model";
 import { getFinisherSystemPrompt, buildFinisherPrompt } from "@/lib/ai/prompts";
 import { getGoalTier, getFinisherSchema } from "@/lib/schemas/idea-finisher";
-import { createClient } from "@/lib/supabase/server";
+import { requireCredits, deductCredits } from "@/lib/credits";
+import { CREDIT_COSTS } from "@/lib/stripe";
 
 export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
-    if (!supabase) {
-      return Response.json({ error: "Auth not configured." }, { status: 503 });
-    }
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return Response.json({ error: "Authentication required." }, { status: 401 });
-    }
+    const { user, error: authError } = await requireCredits(CREDIT_COSTS.finish);
+    if (authError) return authError;
 
     const body = (await req.json()) as {
       topic?: string;
@@ -57,6 +52,8 @@ export async function POST(req: Request) {
     const tier = getGoalTier(body.planGoal);
     const schema = getFinisherSchema(tier);
     const systemPrompt = getFinisherSystemPrompt(tier);
+
+    await deductCredits(user.id, CREDIT_COSTS.finish, `Launch Plan: ${topic.slice(0, 80)}`);
 
     const result = streamText({
       model,

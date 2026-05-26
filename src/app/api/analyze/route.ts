@@ -4,20 +4,15 @@ import { extractSearchQuery } from "@/lib/demand/extract-query";
 import { getAnalystModel } from "@/lib/ai/model";
 import { ANALYST_SYSTEM, buildAnalystPrompt } from "@/lib/ai/prompts";
 import { ideaReportSchema } from "@/lib/schemas/idea-report";
-import { createClient } from "@/lib/supabase/server";
+import { requireCredits, deductCredits } from "@/lib/credits";
+import { CREDIT_COSTS } from "@/lib/stripe";
 
 export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
-    if (!supabase) {
-      return Response.json({ error: "Auth not configured." }, { status: 503 });
-    }
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return Response.json({ error: "Authentication required." }, { status: 401 });
-    }
+    const { user, error: authError } = await requireCredits(CREDIT_COSTS.validate);
+    if (authError) return authError;
 
     const body = (await req.json()) as {
       topic?: string;
@@ -64,6 +59,8 @@ export async function POST(req: Request) {
         { status: 503 },
       );
     }
+
+    await deductCredits(user.id, CREDIT_COSTS.validate, `Validate: ${topic.slice(0, 80)}`);
 
     const result = streamText({
       model,

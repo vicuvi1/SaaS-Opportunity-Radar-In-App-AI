@@ -85,10 +85,10 @@ export default function Home() {
         {/* Hero */}
         <section className="pb-14 pt-16 text-center md:pb-16 md:pt-28">
           <h1 className="text-[2rem] font-semibold leading-tight tracking-tight sm:text-4xl md:text-[3.25rem] md:leading-[1.08]">
-            Know if your idea has legs<br className="hidden sm:block" /> before you build it.
+            Do your homework<br className="hidden sm:block" /> before you ship.
           </h1>
           <p className="mx-auto mt-5 max-w-lg text-sm text-muted-foreground sm:text-base md:text-lg">
-            FounderHQ pulls real posts from Reddit, Hacker News, GitHub, and Stack Overflow and scores your idea based on your actual goal. A side-project founder and a VC-track founder get different scores for the same idea.
+            Surface startup ideas matched to your background, validate them against real posts from Reddit, Hacker News, GitHub, and Stack Overflow, then turn the best ones into a full launch blueprint. Every score is calibrated to your goal, not a generic market average.
           </p>
           <div className="mt-8 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
             <Link
@@ -111,7 +111,7 @@ export default function Home() {
             <div>
               <p className="text-sm font-medium">Everything is calibrated to you</p>
               <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">
-                Before you run anything, FounderHQ collects your background: role, skills, communities you are in, your goal, and how you want to monetize. Every score, every idea, and every plan adjusts based on who you actually are.
+                Before you run anything, FounderHQ asks about your background: your role, skills, the communities you are part of, your goal, and how you want to make money. Everything you see after that adjusts to who you actually are.
               </p>
             </div>
           </div>
@@ -134,16 +134,16 @@ export default function Home() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold">Discover</p>
-                    <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">Mode 1</span>
+                    <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">Mode 1</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                    No idea yet? FounderHQ maps 3 opportunity zones based on your specific distribution access and workflow knowledge, then generates 2-3 targeted ideas per zone. Not topics you find interesting, but markets where you can actually reach customers. Each idea is scored on 4 founder fit dimensions and an overall opportunity score. Save the ones worth pursuing.
+                    No idea yet? Tell FounderHQ your niche or leave it blank and let your profile do the work. It finds three opportunity areas based on who you are and where you have real reach, then generates a few ideas for each one. Not topics you find interesting, but markets you can actually get into. Each idea comes with a founder fit score so you can see how well it matches your skills and situation.
                   </p>
 
                   {/* Founder fit score preview */}
                   <div className="mt-4 overflow-hidden rounded-xl border border-border/60 bg-background/60">
                     <div className="border-b border-border/50 px-4 py-2.5">
-                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Founder Fit Score</span>
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Founder Fit Score</span>
                     </div>
                     <div className="px-4 py-3 space-y-2">
                       {[
@@ -153,14 +153,14 @@ export default function Home() {
                         { label: "Monetization fit", value: 8 },
                       ].map((item) => (
                         <div key={item.label} className="flex items-center gap-3">
-                          <span className="w-24 shrink-0 text-[11px] text-muted-foreground sm:w-36">{item.label}</span>
+                          <span className="w-24 shrink-0 text-xs text-muted-foreground sm:w-36">{item.label}</span>
                           <div className="h-1.5 flex-1 rounded-full bg-muted/50">
                             <div
                               className="h-full rounded-full bg-primary/60"
                               style={{ width: `${item.value * 10}%` }}
                             />
                           </div>
-                          <span className="w-4 shrink-0 text-right text-[11px] text-muted-foreground">{item.value}</span>
+                          <span className="w-4 shrink-0 text-right text-xs text-muted-foreground">{item.value}</span>
                         </div>
                       ))}
                     </div>
@@ -168,7 +168,7 @@ export default function Home() {
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {["3 opportunity zones", "Founder fit scores", "Brainstorm chat", "Save to idea library"].map((t) => (
-                      <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-[11px] text-muted-foreground">{t}</span>
+                      <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-xs text-muted-foreground">{t}</span>
                     ))}
                   </div>
                 </div>
@@ -184,24 +184,24 @@ export default function Home() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold">Validate</p>
-                    <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">Mode 2</span>
-                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Core feature</span>
+                    <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">Mode 2</span>
+                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Core feature</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                    Paste your idea. FounderHQ fetches up to 70 real posts across 5 sources, then issues a verdict and a Build Gate Score calibrated to your goal. The same idea can score very differently depending on whether you are building a side project or raising a seed round. The report tells you exactly why.
+                    Paste your idea. FounderHQ pulls up to 70 real posts from five sources and gives you a verdict and a Build Gate Score calibrated to your goal. A bootstrapper and a VC-track founder get different scores for the same idea because they are solving different problems. The report tells you exactly why yours landed where it did.
                   </p>
 
                   {/* Report preview */}
                   <div className="mt-4 overflow-hidden rounded-xl border border-border/60 bg-background/60">
                     <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
-                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Build Gate Score</span>
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Build Gate Score</span>
                       <span className="rounded-full bg-green-500/15 px-2.5 py-0.5 text-xs font-medium text-green-500">GOOD</span>
                     </div>
                     <div className="px-4 py-3 space-y-3">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-3xl font-semibold">74</span>
                         <span className="text-sm text-muted-foreground">/ 100</span>
-                        <span className="ml-2 text-[11px] text-muted-foreground">Scored for: profitable side project</span>
+                        <span className="ml-2 text-xs text-muted-foreground">Scored for: profitable side project</span>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-2">
                         {[
@@ -211,7 +211,7 @@ export default function Home() {
                           { label: "Founder viability", value: 80 },
                         ].map((s) => (
                           <div key={s.label} className="rounded-lg border border-border/40 bg-muted/20 px-2.5 py-2">
-                            <p className="text-[10px] text-muted-foreground leading-tight">{s.label}</p>
+                            <p className="text-xs text-muted-foreground leading-tight">{s.label}</p>
                             <p className="mt-0.5 text-sm font-medium">{s.value}</p>
                           </div>
                         ))}
@@ -234,8 +234,8 @@ export default function Home() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {["5 verdict tiers", "4 probability scores", "WTP evidence markers", "Don't-build warnings", "Follow-up chat"].map((t) => (
-                      <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-[11px] text-muted-foreground">{t}</span>
+                    {["5 verdict levels", "4 probability scores", "Paying-customer signals", "Don't-build warnings", "Follow-up chat"].map((t) => (
+                      <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-xs text-muted-foreground">{t}</span>
                     ))}
                   </div>
                 </div>
@@ -251,16 +251,16 @@ export default function Home() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold">Launch Plan</p>
-                    <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">Mode 3</span>
+                    <span className="rounded-full border border-border/50 bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground">Mode 3</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                    Your idea scored well. Now what? Pick your goal tier and FounderHQ builds the full plan. MVP scope, competitor breakdowns, a 30-day roadmap, financial projections, and a complete build specification (800+ words) you can paste directly into Lovable, v0, or Cursor to start building immediately. It also writes your Reddit launch post, cold outreach script, and landing page copy. Not templates you fill in yourself.
+                    Your idea scored well. Now what? Pick how ambitious you want to go and FounderHQ builds the full plan. MVP scope, competitor breakdowns, a 30-day roadmap, financial projections, and an 800-word spec you can paste directly into Lovable, v0, or Cursor to start building today. It also writes your Reddit launch post, cold outreach script, and landing page copy. Not templates you fill in yourself.
                   </p>
 
                   {/* Goal tiers */}
                   <div className="mt-4 overflow-hidden rounded-xl border border-border/60 bg-background/60">
                     <div className="border-b border-border/50 px-4 py-2.5">
-                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Goal tiers</span>
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Goal tiers</span>
                     </div>
                     <div className="divide-y divide-border/40">
                       {[
@@ -284,7 +284,7 @@ export default function Home() {
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {["MVP definition", "Competitor analysis", "30-day roadmap", "800-word Lovable / v0 / Cursor prompt", "Reddit + outreach drafts", "Financial projections"].map((t) => (
-                      <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-[11px] text-muted-foreground">{t}</span>
+                      <span key={t} className="rounded-full border border-border/40 bg-muted/30 px-2.5 py-0.5 text-xs text-muted-foreground">{t}</span>
                     ))}
                   </div>
                 </div>
@@ -313,7 +313,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">Up to 70 posts pulled per run, deduplicated. Every report shows which sources were searched and the exact post count from each one.</p>
+            <p className="mt-3 text-xs text-muted-foreground">Up to 70 posts per run, all deduplicated. Every report shows which sources returned results and exactly how many came from each one.</p>
           </div>
         </section>
 

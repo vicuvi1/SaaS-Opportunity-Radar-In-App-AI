@@ -48,12 +48,12 @@ function CopyBlock({ label, text, expand = false }: { label: string; text?: stri
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
         <Button type="button" variant="ghost" size="icon-sm" onClick={() => copyText(text)}>
           <ClipboardCopy className="size-3.5" />
         </Button>
       </div>
-      <pre className={`overflow-auto whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-[11px] text-muted-foreground ${expand ? "max-h-96" : "max-h-52"}`}>
+      <pre className={`overflow-auto whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-xs text-muted-foreground ${expand ? "max-h-96" : "max-h-52"}`}>
         {text}
       </pre>
     </div>
@@ -81,7 +81,7 @@ function Collapsible({ title, badge, defaultOpen = false, children }: {
 
 function SLabel({ children }: { children: string }) {
   return (
-    <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
       {children}
     </h3>
   );
@@ -108,7 +108,7 @@ function Card({
     }`}>
       <div className="flex items-center gap-2">
         <Icon className={`size-3.5 shrink-0 ${accent ? "text-primary" : "text-muted-foreground/70"}`} />
-        <h3 className={`text-[11px] font-bold uppercase tracking-widest ${accent ? "text-primary" : "text-muted-foreground/60"}`}>
+        <h3 className={`text-xs font-bold uppercase tracking-widest ${accent ? "text-primary" : "text-muted-foreground/60"}`}>
           {title}
         </h3>
       </div>
@@ -121,7 +121,7 @@ function Row({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
     <div className="space-y-0.5">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-sm text-foreground/85 leading-relaxed">{value}</p>
     </div>
   );
@@ -139,7 +139,7 @@ function Bullets({ items, variant = "default" }: {
         const prefix =
           variant === "check"    ? <CheckCircle2 className="size-3.5 shrink-0 mt-0.5 text-emerald-400" /> :
           variant === "cross"    ? <X className="size-3.5 shrink-0 mt-0.5 text-red-400/70" /> :
-          variant === "numbered" ? <span className="text-muted-foreground/50 shrink-0 tabular-nums text-[11px] min-w-[1rem]">{i + 1}.</span> :
+          variant === "numbered" ? <span className="text-muted-foreground shrink-0 tabular-nums text-xs min-w-[1rem]">{i + 1}.</span> :
                                    <Circle className="size-1.5 shrink-0 mt-1.5 fill-muted-foreground/40 text-transparent" />;
         return (
           <li key={i} className="flex items-start gap-2 text-sm text-foreground/80 leading-relaxed">
@@ -164,7 +164,7 @@ export function GoalSelector({ value, onChange, compact = false }: {
       <select
         value={value ?? ""}
         onChange={e => onChange?.(e.target.value)}
-        className="h-7 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px] text-muted-foreground transition-colors hover:border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
+        className="h-7 rounded-lg border border-border/60 bg-background/60 px-2 text-xs text-muted-foreground transition-colors hover:border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
       >
         <option value="">Set your goal</option>
         {GOAL_OPTIONS.map(g => (
@@ -180,7 +180,7 @@ export function GoalSelector({ value, onChange, compact = false }: {
         <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
           What are you building toward? <span className="text-destructive">*</span>
         </p>
-        <p className="text-[11px] text-muted-foreground/50 mt-0.5">Shapes the depth, GTM focus, and financial projections in your blueprint.</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Shapes the depth, GTM focus, and financial projections in your blueprint.</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {GOAL_OPTIONS.map(goal => {
@@ -479,7 +479,7 @@ export function FinisherBlueprint({
       {/* Header strip */}
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 px-4 py-2">
         <div className="flex items-center gap-2 min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 flex items-center gap-1.5 shrink-0">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 shrink-0">
             {generating && <Loader2 className="size-3 animate-spin" />}
             {generating ? "Generating…" : "Business Plan"}
           </p>
@@ -495,7 +495,7 @@ export function FinisherBlueprint({
               onClick={() => downloadAsPDF(b, ideaTitle, planGoal)}
             >
               <FileDown className="size-3.5" />
-              Download PDF
+              <span className="hidden sm:inline">Download PDF</span>
             </Button>
           )}
           {!generating && (
@@ -511,12 +511,12 @@ export function FinisherBlueprint({
           className="mx-4 mt-3 mb-0 grid h-9 w-auto shrink-0 rounded-xl bg-muted/70 p-1"
           style={{ gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))` }}
         >
-          <TabsTrigger value="plan"     className="text-[10px] px-1">Plan</TabsTrigger>
-          {tier !== "lean" && <TabsTrigger value="market"   className="text-[10px] px-1">Market</TabsTrigger>}
-          <TabsTrigger value="strategy" className="text-[10px] px-1">Strategy</TabsTrigger>
-          <TabsTrigger value="build"    className="text-[10px] px-1">Build</TabsTrigger>
-          <TabsTrigger value="finance"  className="text-[10px] px-1">Finance</TabsTrigger>
-          {tier === "venture" && <TabsTrigger value="investor" className="text-[10px] px-1">Investor</TabsTrigger>}
+          <TabsTrigger value="plan"     className="text-xs px-1.5">Plan</TabsTrigger>
+          {tier !== "lean" && <TabsTrigger value="market"   className="text-xs px-1.5">Market</TabsTrigger>}
+          <TabsTrigger value="strategy" className="text-xs px-1.5">Strategy</TabsTrigger>
+          <TabsTrigger value="build"    className="text-xs px-1.5">Build</TabsTrigger>
+          <TabsTrigger value="finance"  className="text-xs px-1.5">Finance</TabsTrigger>
+          {tier === "venture" && <TabsTrigger value="investor" className="text-xs px-1.5">Investor</TabsTrigger>}
         </TabsList>
 
         <ScrollArea className="min-h-0 flex-1">
@@ -532,7 +532,7 @@ export function FinisherBlueprint({
                   <Row label="Primary path" value={b.businessTypeAnalysis.primaryPath} />
                   {b.businessTypeAnalysis.readinessScore && (
                     <div className="space-y-0.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Readiness</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Readiness</p>
                       <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
                         b.businessTypeAnalysis.readinessScore === "ready" ? "bg-emerald-500/20 text-emerald-400" :
                         b.businessTypeAnalysis.readinessScore === "almost ready" ? "bg-amber-500/20 text-amber-400" :
@@ -542,7 +542,7 @@ export function FinisherBlueprint({
                   )}
                   {(b.businessTypeAnalysis.alternativePaths?.length ?? 0) > 0 && (
                     <div className="space-y-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Alternative Paths</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Alternative Paths</p>
                       {b.businessTypeAnalysis.alternativePaths.map((path: any, i: number) => (
                         <div key={i} className="rounded-md bg-muted/30 p-2.5 space-y-1 text-xs">
                           <p className="font-semibold text-foreground">{path.type}</p>
@@ -554,7 +554,7 @@ export function FinisherBlueprint({
                   )}
                   {(b.businessTypeAnalysis.keyUnknowns?.length ?? 0) > 0 && (
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Key Unknowns</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Unknowns</p>
                       <Bullets items={b.businessTypeAnalysis.keyUnknowns} />
                     </div>
                   )}
@@ -569,7 +569,7 @@ export function FinisherBlueprint({
                   )}
                   {b.executiveSummary.missionStatement && (
                     <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-primary/60 mb-1">Mission</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary/60 mb-1">Mission</p>
                       <p className="text-sm text-foreground/85 italic leading-relaxed">"{b.executiveSummary.missionStatement}"</p>
                     </div>
                   )}
@@ -585,13 +585,13 @@ export function FinisherBlueprint({
                   )}
                   {(b.executiveSummary.companyAdvantages?.length ?? 0) > 0 && (
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Company Advantages</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Company Advantages</p>
                       <Bullets items={b.executiveSummary.companyAdvantages} variant="check" />
                     </div>
                   )}
                   {(b.executiveSummary.keySuccessFactors?.length ?? 0) > 0 && (
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Key Success Factors</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Success Factors</p>
                       <Bullets items={b.executiveSummary.keySuccessFactors} variant="check" />
                     </div>
                   )}
@@ -637,7 +637,7 @@ export function FinisherBlueprint({
                   <Row label="Market size" value={b.industryContext.marketSize} />
                   {(b.industryContext.companyAdvantages?.length ?? 0) > 0 && (
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Advantages in this industry</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Advantages in this industry</p>
                       <Bullets items={b.industryContext.companyAdvantages} variant="check" />
                     </div>
                   )}
@@ -675,13 +675,13 @@ export function FinisherBlueprint({
                 <Card icon={Megaphone} title="Marketing & Sales">
                   {(b.marketingAndSales.growthStrategy?.length ?? 0) > 0 && (
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Growth Strategy</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Growth Strategy</p>
                       <Bullets items={b.marketingAndSales.growthStrategy} variant="check" />
                     </div>
                   )}
                   {(b.marketingAndSales.communicationChannels?.length ?? 0) > 0 && (
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Channels</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Channels</p>
                       <Bullets items={b.marketingAndSales.communicationChannels} />
                     </div>
                   )}
@@ -699,13 +699,13 @@ export function FinisherBlueprint({
                   <div className="space-y-2 text-xs text-muted-foreground">
                     <p>{b.problemAnalysis.customerPain}</p>
                     <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/30 p-2">
-                      <div><p className="font-medium text-foreground text-[11px]">Who</p><p>{b.problemAnalysis.whoExperiences}</p></div>
-                      <div><p className="font-medium text-foreground text-[11px]">Urgency</p><p className="capitalize">{b.problemAnalysis.urgency}</p></div>
-                      <div className="col-span-2"><p className="font-medium text-foreground text-[11px]">Frequency</p><p>{b.problemAnalysis.frequency}</p></div>
+                      <div><p className="font-medium text-foreground text-xs">Who</p><p>{b.problemAnalysis.whoExperiences}</p></div>
+                      <div><p className="font-medium text-foreground text-xs">Urgency</p><p className="capitalize">{b.problemAnalysis.urgency}</p></div>
+                      <div className="col-span-2"><p className="font-medium text-foreground text-xs">Frequency</p><p>{b.problemAnalysis.frequency}</p></div>
                     </div>
                     {(b.problemAnalysis.currentAlternatives?.length ?? 0) > 0 && (
                       <div>
-                        <p className="font-medium text-foreground text-[11px] mb-1">Current alternatives</p>
+                        <p className="font-medium text-foreground text-xs mb-1">Current alternatives</p>
                         <ul className="list-disc list-inside space-y-0.5">
                           {b.problemAnalysis.currentAlternatives?.map((a: any, i: number) => <li key={i}>{a}</li>)}
                         </ul>
@@ -738,7 +738,7 @@ export function FinisherBlueprint({
                 {/* Trust indicator */}
                 <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2">
                   <Info className="size-3.5 shrink-0 mt-0.5 text-amber-400" />
-                  <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Competitor data is AI-generated from training knowledge. Links and pricing should be verified independently before relying on them. Click any link to confirm the site is current.
                   </p>
                 </div>
@@ -748,13 +748,13 @@ export function FinisherBlueprint({
                     {(b?.competitors ?? []).map((c: any, i: number) => (
                       <Collapsible key={i}
                         title={c?.name ?? "…"}
-                        badge={c?.pricing ? <Badge variant="outline" className="text-[10px] font-normal">{c.pricing}</Badge> : undefined}>
+                        badge={c?.pricing ? <Badge variant="outline" className="text-xs font-normal">{c.pricing}</Badge> : undefined}>
                         <div className="space-y-3 text-xs">
                           {c?.name && (
                             <a
                               href={`https://www.google.com/search?q=${encodeURIComponent(c.name)}`}
                               target="_blank" rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-[11px] text-primary/80 hover:text-primary transition-colors"
+                              className="flex items-center gap-1 text-xs text-primary/80 hover:text-primary transition-colors"
                             >
                               <ExternalLink className="size-3" />
                               Search {c.name} on Google
@@ -793,7 +793,7 @@ export function FinisherBlueprint({
               {/* Evidence */}
               <div className="space-y-2">
                 <SLabel>Pain clusters</SLabel>
-                <p className="text-[11px] text-muted-foreground">Groups of similar complaints from real posts. Each cluster is a product opportunity.</p>
+                <p className="text-xs text-muted-foreground">Groups of similar complaints from real posts. Each cluster is a product opportunity.</p>
                 {(b.painClusters?.length ?? 0) === 0 ? <Empty streaming={generating} /> : (
                   <div className="space-y-2">
                     {(b?.painClusters ?? []).map((c: any, i: number) => (
@@ -801,7 +801,7 @@ export function FinisherBlueprint({
                         <div className="space-y-2">
                           <p className="text-xs text-muted-foreground">{c?.opportunityHypothesis}</p>
                           <div className="space-y-1">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Evidence snippets</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Evidence snippets</p>
                             {c?.evidenceSnippets?.map((ex: any, j: number) => (
                               <p key={j} className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">"{ex}"</p>
                             ))}
@@ -813,24 +813,24 @@ export function FinisherBlueprint({
                 )}
 
                 <SLabel>Demand signals</SLabel>
-                <p className="text-[11px] text-muted-foreground"><span className="text-violet-400">Purple</span> = payment language found. Click links to view the original posts.</p>
+                <p className="text-xs text-muted-foreground"><span className="text-violet-400">Purple</span> = payment language found. Click links to view the original posts.</p>
                 {(b.demandSignalsSummary?.length ?? 0) === 0 ? <Empty streaming={generating} /> : (
                   <div className="space-y-2">
                     {(b?.demandSignalsSummary ?? []).map((s: any, i: number) => (
                       <div key={i} className="rounded-xl border border-border/70 bg-background/55 p-3 text-xs space-y-2">
                         <div className="flex flex-wrap gap-1.5">
-                          <Badge variant="secondary" className="font-normal capitalize text-[10px]">{s?.source}</Badge>
+                          <Badge variant="secondary" className="font-normal capitalize text-xs">{s?.source}</Badge>
                           {s?.wtpSignal && (
-                            <Badge className="bg-violet-600/90 font-normal text-[10px]">Mentions paying</Badge>
+                            <Badge className="bg-violet-600/90 font-normal text-xs">Mentions paying</Badge>
                           )}
-                          <Badge variant="outline" className="font-normal text-[10px]">
+                          <Badge variant="outline" className="font-normal text-xs">
                             {s?.frustration === "high" ? "Very frustrated" : s?.frustration === "medium" ? "Somewhat frustrated" : "Mildly frustrated"}
                           </Badge>
                         </div>
                         <p className="text-muted-foreground">"{s?.excerpt}"</p>
                         {s?.url && (
                           <a href={s.url} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1 truncate text-[11px] text-primary/80 hover:text-primary transition-colors">
+                            className="flex items-center gap-1 truncate text-xs text-primary/80 hover:text-primary transition-colors">
                             <ExternalLink className="size-3 shrink-0" />
                             View original post
                           </a>
@@ -935,11 +935,11 @@ export function FinisherBlueprint({
                 <Card icon={Hammer} title="MVP Definition" accent>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/50">In scope</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">In scope</p>
                       <Bullets items={b.mvp.features} variant="check" />
                     </div>
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/50">Out of scope (v1)</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Out of scope (v1)</p>
                       <Bullets items={b.mvp.excluded} variant="cross" />
                     </div>
                   </div>
@@ -966,29 +966,26 @@ export function FinisherBlueprint({
               {b.buildArtifacts?.buildPrompt && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">AI Build Prompt</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">AI Build Prompt</p>
                     <Button type="button" variant="ghost" size="icon-sm" onClick={() => copyText(b.buildArtifacts!.buildPrompt!)}>
                       <ClipboardCopy className="size-3.5" />
                     </Button>
                   </div>
-                  <p className="text-[11px] text-muted-foreground/60">Paste into Claude Code, Cursor, Lovable, v0, or any AI coding tool to start building immediately.</p>
-                  <pre className="overflow-auto whitespace-pre-wrap rounded-md bg-muted/40 p-3 text-[11px] text-muted-foreground max-h-[480px]">
+                  <p className="text-xs text-muted-foreground">Paste into Claude Code, Cursor, Lovable, v0, or any AI coding tool to start building immediately.</p>
+                  <pre className="overflow-auto whitespace-pre-wrap rounded-md bg-muted/40 p-3 text-xs text-muted-foreground max-h-[480px]">
                     {b.buildArtifacts.buildPrompt}
                   </pre>
                 </div>
               )}
 
               {b.buildArtifacts && (
-                <Collapsible title="Architecture & schema">
+                <Collapsible title="Build details">
                   <div className="space-y-4">
-                    <CopyBlock label="Database schema" text={b.buildArtifacts.dbSchema} />
-                    <CopyBlock label="Architecture overview" text={b.buildArtifacts.architecture} />
                     <CopyBlock label="Auth & payments" text={b.buildArtifacts.authPayments} />
-                    <CopyBlock label="Landing copy"    text={b.buildArtifacts.landingCopy} />
                     <CopyBlock label="Onboarding flow" text={b.buildArtifacts.onboardingFlow} />
                     {(b.buildArtifacts.mvpFeatures?.length ?? 0) > 0 && (
                       <div className="space-y-1">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">MVP features</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">MVP features</p>
                         <ul className="list-disc list-inside space-y-0.5 text-xs text-muted-foreground">
                           {b.buildArtifacts.mvpFeatures?.map((f: any, i: number) => <li key={i}>{f}</li>)}
                         </ul>
@@ -996,7 +993,7 @@ export function FinisherBlueprint({
                     )}
                     {(b.buildArtifacts.roadmap30Day?.length ?? 0) > 0 && (
                       <div className="space-y-1">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">30-day build roadmap</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">30-day build roadmap</p>
                         <ol className="list-decimal list-inside space-y-0.5 text-xs text-muted-foreground">
                           {b.buildArtifacts.roadmap30Day?.map((step: any, i: number) => <li key={i}>{step}</li>)}
                         </ol>
@@ -1009,7 +1006,7 @@ export function FinisherBlueprint({
               {b.buildArtifacts && (
                 <Collapsible title="Build order">
                   <div className="space-y-2">
-                    <p className="text-[11px] text-muted-foreground">Sequential steps to ship the MVP from scratch.</p>
+                    <p className="text-xs text-muted-foreground">Sequential steps to ship the MVP from scratch.</p>
                     <Bullets items={b.buildOrder} variant="numbered" />
                   </div>
                 </Collapsible>
@@ -1020,13 +1017,12 @@ export function FinisherBlueprint({
                   <div className="space-y-4">
                     <CopyBlock label="Reddit post draft"    text={b.validationPack.redditPostDraft} />
                     <CopyBlock label="Twitter/X launch"     text={b.validationPack.twitterLaunchDraft} />
-                    <CopyBlock label="Landing page copy"    text={b.validationPack.landingPageCopy} />
                     <CopyBlock label="Waitlist copy"        text={b.validationPack.waitlistCopy} />
                     <CopyBlock label="Cold outreach script" text={b.validationPack.coldOutreachScript} />
                     <CopyBlock label="Community plan"       text={b.validationPack.communityPlan} />
                     {(b.validationPack.interviewQuestions?.length ?? 0) > 0 && (
                       <div className="space-y-1">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Customer interview questions</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Customer interview questions</p>
                         <ol className="list-decimal list-inside space-y-0.5 text-xs text-muted-foreground">
                           {b.validationPack.interviewQuestions?.map((q: any, i: number) => <li key={i}>{q}</li>)}
                         </ol>
@@ -1058,7 +1054,7 @@ export function FinisherBlueprint({
                     <Row label="First revenue timeline" value={b.financialPlan.firstRevenueTimeline} />
                     {(b.financialPlan.keyAssumptions?.length ?? 0) > 0 && (
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Key Assumptions</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Assumptions</p>
                         <Bullets items={b.financialPlan.keyAssumptions} />
                       </div>
                     )}
@@ -1073,7 +1069,7 @@ export function FinisherBlueprint({
                     <Row label="Funding needs" value={b.financialPlan.fundingNeeds} />
                     {(b.financialPlan.keyAssumptions?.length ?? 0) > 0 && (
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Key Assumptions to Validate First</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Assumptions to Validate First</p>
                         <Bullets items={b.financialPlan.keyAssumptions} />
                       </div>
                     )}
@@ -1102,14 +1098,14 @@ export function FinisherBlueprint({
                       )}
                       {(b.financialPlan.keyAssumptions?.length ?? 0) > 0 && (
                         <div className="space-y-1.5">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Key Assumptions</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Key Assumptions</p>
                           <Bullets items={b.financialPlan.keyAssumptions} />
                         </div>
                       )}
                     </Card>
                     <div className="rounded-lg border border-border/40 bg-muted/10 px-3 py-2 flex items-start gap-2">
                       <Info className="size-3.5 shrink-0 mt-0.5 text-muted-foreground/50" />
-                      <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
                         Financial projections are AI estimates based on market patterns. Treat them as rough planning anchors, not forecasts. Verify assumptions with real customer conversations.
                       </p>
                     </div>
@@ -1122,7 +1118,7 @@ export function FinisherBlueprint({
                   <div className="space-y-3">
                     {(b.launchMilestones.week1?.length ?? 0) > 0 && (
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/50 flex items-center gap-1.5">
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
                           <TrendingUp className="size-3 text-emerald-400/70" />
                           Week 1
                         </p>
@@ -1131,25 +1127,25 @@ export function FinisherBlueprint({
                     )}
                     {(b.launchMilestones.month1?.length ?? 0) > 0 && (
                       <div className="space-y-1.5 border-t border-border/30 pt-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/50">Month 1</p>
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Month 1</p>
                         <Bullets items={b.launchMilestones.month1} variant="numbered" />
                       </div>
                     )}
                     {(b.launchMilestones.month3?.length ?? 0) > 0 && (
                       <div className="space-y-1.5 border-t border-border/30 pt-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/50">Month 3</p>
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Month 3</p>
                         <Bullets items={b.launchMilestones.month3} variant="numbered" />
                       </div>
                     )}
                     {(b.launchMilestones.month6?.length ?? 0) > 0 && (
                       <div className="space-y-1.5 border-t border-border/30 pt-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground/50">Month 6</p>
+                        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Month 6</p>
                         <Bullets items={b.launchMilestones.month6} variant="numbered" />
                       </div>
                     )}
                     {tier === "explore" && (b.launchMilestones.pivotTriggers?.length ?? 0) > 0 && (
                       <div className="space-y-1.5 border-t border-border/30 pt-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-amber-400/70">Pivot Triggers</p>
+                        <p className="text-xs font-bold uppercase tracking-wide text-amber-400/70">Pivot Triggers</p>
                         <Bullets items={b.launchMilestones.pivotTriggers} variant="cross" />
                       </div>
                     )}
@@ -1205,13 +1201,13 @@ export function FinisherBlueprint({
                     <Row label="Investor profile" value={b.fundingStrategy.investorProfile} />
                     {(b.fundingStrategy.useOfFunds?.length ?? 0) > 0 && (
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Use of Funds</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Use of Funds</p>
                         <Bullets items={b.fundingStrategy.useOfFunds} variant="numbered" />
                       </div>
                     )}
                     {(b.fundingStrategy.seriesATriggers?.length ?? 0) > 0 && (
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Series A Triggers</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Series A Triggers</p>
                         <Bullets items={b.fundingStrategy.seriesATriggers} variant="check" />
                       </div>
                     )}
@@ -1222,13 +1218,13 @@ export function FinisherBlueprint({
                   <Card icon={Users} title="Team Plan">
                     {(b.teamPlan.founderRoles?.length ?? 0) > 0 && (
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Founder Roles</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Founder Roles</p>
                         <Bullets items={b.teamPlan.founderRoles} />
                       </div>
                     )}
                     {(b.teamPlan.earlyHires?.length ?? 0) > 0 && (
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">Early Hires (in order)</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Early Hires (in order)</p>
                         <Bullets items={b.teamPlan.earlyHires} variant="numbered" />
                       </div>
                     )}

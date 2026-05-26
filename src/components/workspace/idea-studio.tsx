@@ -46,11 +46,28 @@ import {
   Target,
   TriangleAlert,
   X,
+  Zap,
 } from "lucide-react";
+import { CREDIT_COSTS } from "@/lib/stripe-config";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { StorageProvider, StoredMessage } from "@/lib/storage";
 import type { SavedIdea } from "@/lib/saved-ideas";
+
+function isCreditError(e: Error | undefined | null): boolean {
+  if (!e) return false;
+  const msg = e.message?.toLowerCase() ?? "";
+  return msg.includes("insufficient credits") || msg.includes("402") || msg.includes("not enough credits");
+}
+
+function CreditCost({ cost }: { cost: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+      <Zap className="size-3" />
+      {cost} credits
+    </span>
+  );
+}
 
 function textFromMessage(m: UIMessage): string {
   return m.parts
@@ -102,6 +119,8 @@ export function IdeaStudio({
   onNewThread,
   founderProfile,
   onOpenSettings,
+  onBuyCredits,
+  onRefreshCredits,
   savedIdeas = [],
   onSaveIdea,
   onUnsaveIdea,
@@ -115,6 +134,8 @@ export function IdeaStudio({
   onNewThread?: () => void;
   founderProfile?: FounderProfile | null;
   onOpenSettings?: (open?: boolean) => void;
+  onBuyCredits?: () => void;
+  onRefreshCredits?: () => void;
   savedIdeas?: SavedIdea[];
   onSaveIdea?: (idea: Omit<SavedIdea, "id" | "savedAt">) => void;
   onUnsaveIdea?: (id: string) => void;
@@ -227,6 +248,7 @@ export function IdeaStudio({
     schema: ideaReportSchema,
     initialValue: thread.report ?? undefined,
     onFinish: ({ object: finished }: { object: IdeaReport | undefined; error: unknown }) => {
+      onRefreshCredits?.();
       if (finished) {
         onPatch({
           report: finished,
@@ -237,6 +259,7 @@ export function IdeaStudio({
         });
       }
     },
+    onError: (err: Error) => { if (isCreditError(err)) onBuyCredits?.(); },
   });
 
   const {
@@ -251,10 +274,12 @@ export function IdeaStudio({
     schema: ideaDiscoverySchema,
     initialValue: thread.discoveryResult ?? undefined,
     onFinish: ({ object: finished }: { object: IdeaDiscovery | undefined; error: unknown }) => {
+      onRefreshCredits?.();
       if (finished) {
         onPatch({ discoveryResult: finished, updatedAt: Date.now() });
       }
     },
+    onError: (err: Error) => { if (isCreditError(err)) onBuyCredits?.(); },
   });
 
   const {
@@ -265,6 +290,8 @@ export function IdeaStudio({
   } = useObject({
     api: "/api/finish",
     schema: z.record(z.string(), z.unknown()),
+    onFinish: () => { onRefreshCredits?.(); },
+    onError: (err: Error) => { if (isCreditError(err)) onBuyCredits?.(); },
   });
 
   useEffect(() => {
@@ -400,7 +427,7 @@ export function IdeaStudio({
               }`}
             >
               <span className="flex items-center gap-1.5"><Sparkles className="size-3.5" />Discover</span>
-              <span className={`text-[9px] font-normal leading-none mt-0.5 ${mode === "create" ? "text-muted-foreground/70" : "text-muted-foreground/40"}`}>find ideas</span>
+              <span className={`text-xs font-normal leading-none mt-0.5 ${mode === "create" ? "text-muted-foreground" : "text-muted-foreground/60"}`}>find ideas</span>
             </button>
             <button
               type="button"
@@ -412,7 +439,7 @@ export function IdeaStudio({
               }`}
             >
               <span className="flex items-center gap-1.5"><Target className="size-3.5" />Validate</span>
-              <span className={`text-[9px] font-normal leading-none mt-0.5 ${mode === "validate" ? "text-muted-foreground/70" : "text-muted-foreground/40"}`}>check demand</span>
+              <span className={`text-xs font-normal leading-none mt-0.5 ${mode === "validate" ? "text-muted-foreground" : "text-muted-foreground/60"}`}>check demand</span>
             </button>
             <button
               type="button"
@@ -430,7 +457,7 @@ export function IdeaStudio({
               }`}
             >
               <span className="flex items-center gap-1.5"><Rocket className="size-3.5" />Launch Plan</span>
-              <span className={`text-[9px] font-normal leading-none mt-0.5 ${mode === "finish" ? "text-muted-foreground/70" : "text-muted-foreground/40"}`}>build blueprint</span>
+              <span className={`text-xs font-normal leading-none mt-0.5 ${mode === "finish" ? "text-muted-foreground" : "text-muted-foreground/60"}`}>build blueprint</span>
             </button>
           </div>
 
@@ -480,7 +507,7 @@ export function IdeaStudio({
           {/* CREATE mode form */}
           {mode === "create" && (
             <div className="flex flex-col gap-3">
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Brainstorm with the chat on the right, or generate a full idea grid below. Your saved founder profile is used automatically.
               </p>
               <div className="space-y-1.5">
@@ -504,6 +531,7 @@ export function IdeaStudio({
                   {discovering ? <Loader2 className="size-4 animate-spin" /> : <Lightbulb className="size-4" />}
                   {discovering ? "Finding ideas…" : "Generate ideas"}
                 </Button>
+                <CreditCost cost={CREDIT_COSTS.discover} />
                 {discovering && (
                   <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => stopDiscover()}>
                     <Square className="size-3.5" />
@@ -511,7 +539,7 @@ export function IdeaStudio({
                   </Button>
                 )}
               </div>
-              {discoverError && (
+              {discoverError && !isCreditError(discoverError) && (
                 <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   <TriangleAlert className="mt-0.5 size-4 shrink-0" />
                   <span>{discoverError.message}</span>
@@ -527,9 +555,9 @@ export function IdeaStudio({
                 >
                   <div className="flex items-center gap-1.5">
                     <Bookmark className="size-3 text-muted-foreground/70" />
-                    <span className="text-[11px] text-muted-foreground/80">Saved ideas</span>
+                    <span className="text-xs text-muted-foreground">Saved ideas</span>
                     {savedIdeas.length > 0 && (
-                      <span className="rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground/80">
+                      <span className="rounded-full bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground">
                         {savedIdeas.length}
                       </span>
                     )}
@@ -539,7 +567,7 @@ export function IdeaStudio({
                 {savedOpen && (
                   <div className="border-t border-border/50 max-h-44 overflow-y-auto divide-y divide-border/30">
                     {savedIdeas.length === 0 ? (
-                      <p className="px-3 py-2.5 text-[11px] text-muted-foreground/60 italic">No saved ideas yet. Bookmark cards below to save them here.</p>
+                      <p className="px-3 py-2.5 text-xs text-muted-foreground italic">No saved ideas yet. Bookmark cards below to save them here.</p>
                     ) : (
                       savedIdeas.map((idea) => (
                         <div key={idea.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted/10 transition-colors">
@@ -553,7 +581,7 @@ export function IdeaStudio({
                           <div className="flex shrink-0 items-center gap-0.5">
                             <Button
                               type="button" size="sm" variant="ghost"
-                              className="h-6 px-2 text-[11px] text-muted-foreground/70 gap-1 hover:text-foreground"
+                              className="h-6 px-2 text-xs text-muted-foreground gap-1 hover:text-foreground"
                               onClick={() => validateIdea({ title: idea.title, oneLiner: idea.oneLiner ?? "", whyYou: idea.whyYou ?? "", whyNow: idea.whyNow ?? "", monetizationPath: idea.monetizationPath ?? "", targetAudience: "", coreWedge: "", firstValidationStep: "", founderFitScore: { skillMatch: 0, distributionAdvantage: 0, executionSpeed: 0, monetizationFit: 0 }, opportunityScore: 0, tags: idea.tags ?? [] })}
                             >
                               Validate
@@ -591,12 +619,12 @@ export function IdeaStudio({
                   <div className="space-y-3 text-xs">
                     {viewingSavedIdea.whyYou && (
                       <p className="text-foreground/75 leading-relaxed">
-                        <span className="text-muted-foreground/60">Why you: </span>{viewingSavedIdea.whyYou}
+                        <span className="text-muted-foreground">Why you: </span>{viewingSavedIdea.whyYou}
                       </p>
                     )}
                     {viewingSavedIdea.whyNow && (
                       <p className="text-foreground/75 leading-relaxed">
-                        <span className="text-muted-foreground/60">Why now: </span>{viewingSavedIdea.whyNow}
+                        <span className="text-muted-foreground">Why now: </span>{viewingSavedIdea.whyNow}
                       </p>
                     )}
                     {viewingSavedIdea.monetizationPath && (
@@ -607,7 +635,7 @@ export function IdeaStudio({
                     {(viewingSavedIdea.tags?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {viewingSavedIdea.tags!.map((tag, i) => (
-                          <Badge key={i} variant="secondary" className="text-[10px]">{tag}</Badge>
+                          <Badge key={i} variant="secondary" className="text-xs">{tag}</Badge>
                         ))}
                       </div>
                     )}
@@ -648,7 +676,7 @@ export function IdeaStudio({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{topic || "Untitled"}</p>
                   {founderProfile?.goal?.length ? (
-                    <p className="truncate text-[11px] text-muted-foreground">
+                    <p className="truncate text-xs text-muted-foreground">
                       Goal: {founderProfile.goal.join(", ")}
                     </p>
                   ) : null}
@@ -669,15 +697,18 @@ export function IdeaStudio({
                   <RotateCcw className="size-3.5" />
                   Reset
                 </Button>
-                <Button
-                  type="button" size="sm"
-                  disabled={analyzing || !topic.trim()}
-                  onClick={runAnalyze}
-                  className="shrink-0 gap-1.5"
-                >
-                  {analyzing ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
-                  Re-run
-                </Button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    type="button" size="sm"
+                    disabled={analyzing || !topic.trim()}
+                    onClick={runAnalyze}
+                    className="gap-1.5"
+                  >
+                    {analyzing ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+                    Re-run
+                  </Button>
+                  <CreditCost cost={CREDIT_COSTS.validate} />
+                </div>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -707,13 +738,13 @@ export function IdeaStudio({
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {founderProfile.goal.map((g) => (
-                        <Badge key={g} variant="secondary" className="text-[10px] font-medium">{g}</Badge>
+                        <Badge key={g} variant="secondary" className="text-xs font-medium">{g}</Badge>
                       ))}
                       {founderProfile.role?.length > 0 && (
-                        <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/60">{founderProfile.role.join(", ")}</Badge>
+                        <Badge variant="outline" className="text-xs text-muted-foreground border-border/60">{founderProfile.role.join(", ")}</Badge>
                       )}
                       {founderProfile.technicalLevel && (
-                        <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/60">{founderProfile.technicalLevel}</Badge>
+                        <Badge variant="outline" className="text-xs text-muted-foreground border-border/60">{founderProfile.technicalLevel}</Badge>
                       )}
                     </div>
                   </div>
@@ -742,6 +773,7 @@ export function IdeaStudio({
                     {analyzing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
                     {analyzing ? "Analyzing…" : "Run analysis"}
                   </Button>
+                  <CreditCost cost={CREDIT_COSTS.validate} />
                   {analyzing && (
                     <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => stopAnalyze()}>
                       <Square className="size-3.5" />
@@ -757,7 +789,7 @@ export function IdeaStudio({
                     Reset
                   </Button>
                 </div>
-                {analyzeError && (
+                {analyzeError && !isCreditError(analyzeError) && (
                   <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                     <TriangleAlert className="mt-0.5 size-4 shrink-0" />
                     <span>{analyzeError.message}</span>
@@ -767,7 +799,7 @@ export function IdeaStudio({
                   <button
                     type="button"
                     onClick={() => setFormCollapsed(true)}
-                    className="mt-1 flex w-full items-center justify-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    className="mt-1 flex w-full items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <ChevronUp className="size-3" />
                     Collapse to see report
@@ -783,13 +815,13 @@ export function IdeaStudio({
               /* Validated idea pre-selected as dismissible chip */
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] text-muted-foreground/60 shrink-0">Generating plan for:</span>
+                  <span className="text-xs text-muted-foreground shrink-0">Generating plan for:</span>
                   <div className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/[0.08] pl-3 pr-1.5 py-1 min-w-0">
                     <span className="truncate text-xs font-medium text-foreground max-w-[280px]">
                       {activeReport.title || topic}
                     </span>
                     {typeof activeReport.validationQuality?.buildGateScore === "number" && (
-                      <span className={`shrink-0 text-[10px] font-semibold ${
+                      <span className={`shrink-0 text-xs font-semibold ${
                         activeReport.validationQuality.buildGateScore >= 65 ? "text-emerald-400" :
                         activeReport.validationQuality.buildGateScore >= 40 ? "text-amber-400" : "text-red-400"
                       }`}>
@@ -821,6 +853,7 @@ export function IdeaStudio({
                       }
                       {generating ? "Generating…" : blueprint ? "Regenerate" : "Generate Blueprint"}
                     </Button>
+                    <CreditCost cost={CREDIT_COSTS.finish} />
                     <Button
                       type="button" size="sm" variant="ghost"
                       className="gap-1.5 text-xs text-muted-foreground"
@@ -831,7 +864,7 @@ export function IdeaStudio({
                     </Button>
                   </div>
                   {!planGoal && !generating && (
-                    <p className="text-[11px] text-amber-400/80">Select a goal above to continue.</p>
+                    <p className="text-xs text-amber-400">Select a goal above to continue.</p>
                   )}
                 </div>
               </div>
@@ -842,7 +875,7 @@ export function IdeaStudio({
                   <div className="flex items-center gap-2">
                     <Label htmlFor="finish-topic">Your idea</Label>
                     {!activeReport && (
-                      <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                      <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400">
                         No validation
                       </span>
                     )}
@@ -871,6 +904,7 @@ export function IdeaStudio({
                       }
                       {generating ? "Generating…" : "Generate Blueprint"}
                     </Button>
+                    <CreditCost cost={CREDIT_COSTS.finish} />
                     {!activeReport && (
                       <Button
                         type="button"
@@ -900,7 +934,7 @@ export function IdeaStudio({
                     )}
                   </div>
                   {!planGoal && !generating && (
-                    <p className="text-[11px] text-amber-400/80">Select a goal above to continue.</p>
+                    <p className="text-xs text-amber-400">Select a goal above to continue.</p>
                   )}
                 </div>
               </div>
@@ -964,8 +998,8 @@ export function IdeaStudio({
         style={mobileTab !== "chat" ? { width: chatWidth } : undefined}
       >
         <div className="shrink-0 border-b border-border/70 px-4 py-3">
-          <p className="text-sm font-semibold">{chatMeta.title}</p>
-          <p className="text-xs text-muted-foreground">{chatMeta.description}</p>
+          <p className="text-base font-semibold">{chatMeta.title}</p>
+          <p className="text-sm text-muted-foreground">{chatMeta.description}</p>
         </div>
 
         {/* Selected idea banner - create mode only */}
@@ -974,7 +1008,7 @@ export function IdeaStudio({
             <Lightbulb className="size-3.5 shrink-0 mt-0.5 text-primary/70" />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-foreground truncate">{selectedDiscoveryIdea.title}</p>
-              <p className="text-[11px] text-muted-foreground">Discussing this idea</p>
+              <p className="text-xs text-muted-foreground">Discussing this idea</p>
             </div>
             <button
               type="button"
@@ -1007,7 +1041,7 @@ export function IdeaStudio({
                     : "mr-6 bg-muted/30 text-foreground"
                 }`}
               >
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {m.role === "user" ? "You" : "FounderHQ"}
                 </p>
                 <div className="prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:leading-relaxed [&_p]:mb-2 [&_ul]:my-2 [&_ul]:pl-4 [&_ol]:my-2 [&_ol]:pl-4 [&_li]:my-1 [&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-3 [&_h1]:mb-1 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_strong]:font-semibold">
@@ -1034,7 +1068,7 @@ export function IdeaStudio({
             mode === "create" ? (
               <div className="py-2 space-y-2 text-center">
                 <p className="text-xs font-medium text-foreground">Brainstorm session complete.</p>
-                <p className="text-[11px] text-muted-foreground">You've had enough ideas. Time to pick one and do something with it.</p>
+                <p className="text-xs text-muted-foreground">You've had enough ideas. Time to pick one and do something with it.</p>
                 <div className="flex justify-center gap-2 pt-1">
                   <Button type="button" size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setMode("validate")}>
                     <Target className="size-3.5" />
@@ -1097,7 +1131,7 @@ export function IdeaStudio({
             </div>
           )}
           {!atCap && (
-            <p className="mt-1.5 text-right text-[10px] text-muted-foreground/40">
+            <p className="mt-1.5 text-right text-xs text-muted-foreground/70">
               {effectiveCap - userMessageCount} messages remaining
             </p>
           )}
@@ -1153,7 +1187,7 @@ function AnalysisLoading() {
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="text-center text-[11px] text-muted-foreground">
+        <p className="text-center text-xs text-muted-foreground">
           Sourcing from Reddit · HN · GitHub · Stack Overflow
         </p>
       </div>
@@ -1165,8 +1199,8 @@ function FitDot({ score }: { score?: number }) {
   const v = score ?? 0;
   const color = v >= 8 ? "bg-emerald-500" : v >= 6 ? "bg-amber-500" : "bg-red-500/70";
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-      <span className={`inline-block size-1.5 rounded-full ${color}`} />
+    <span className="inline-flex items-center gap-1 text-xs text-foreground font-medium">
+      <span className={`inline-block size-2 rounded-full ${color}`} />
       {v}
     </span>
   );
@@ -1209,22 +1243,22 @@ function DiscoverResults({
         {/* Founder profile summary */}
         {summary && (summary.role || (summary.skills?.length ?? 0) > 0) && (
           <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Your profile
             </p>
             <div className="flex flex-wrap gap-1.5">
               {summary.role && (
-                <span className="rounded-full border border-border/50 bg-background/60 px-2 py-0.5 text-[11px] text-foreground/80">
+                <span className="rounded-full border border-border/50 bg-background/60 px-2 py-0.5 text-xs text-foreground/80">
                   {summary.role}
                 </span>
               )}
               {summary.skills?.map((s, i) => s && (
-                <span key={i} className="rounded-full border border-border/50 bg-background/60 px-2 py-0.5 text-[11px] text-foreground/80">
+                <span key={i} className="rounded-full border border-border/50 bg-background/60 px-2 py-0.5 text-xs text-foreground/80">
                   {s}
                 </span>
               ))}
               {summary.communities?.map((s, i) => s && (
-                <span key={i} className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] text-primary/80">
+                <span key={i} className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs text-primary/80">
                   {s}
                 </span>
               ))}
@@ -1232,7 +1266,7 @@ function DiscoverResults({
             {summary.keyAdvantages && summary.keyAdvantages.length > 0 && (
               <ul className="space-y-0.5">
                 {summary.keyAdvantages.map((a, i) => a && (
-                  <li key={i} className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
                     <span className="mt-1 size-1 shrink-0 rounded-full bg-primary/40" />
                     {a}
                   </li>
@@ -1244,28 +1278,28 @@ function DiscoverResults({
 
         {/* Empty state */}
         {!streaming && zones.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-            <Sparkles className="size-8 opacity-20" />
-            <p className="text-sm font-medium text-foreground">Your Opportunity Map</p>
-            <p className="max-w-xs text-xs text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-4 py-14 text-center">
+            <Sparkles className="size-14 opacity-50 text-primary" />
+            <p className="text-2xl font-bold text-foreground">Your Opportunity Map</p>
+            <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
               {hasProfile
                 ? "Describe a niche or market above, then click Generate. We'll map the startup opportunities you're best positioned to execute."
-                : "Describe a niche or problem above, or set your Founder Profile - the engine maps opportunities matched to your real distribution advantages."}
+                : "Describe a niche or problem above, or set your Founder Profile — the engine maps opportunities matched to your real distribution advantages."}
             </p>
-            <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground/40">
-              <span className="rounded-full border border-border/30 px-2 py-0.5">1 Discover</span>
-              <ArrowRight className="size-2.5" />
-              <span className="rounded-full border border-border/30 px-2 py-0.5">2 Validate</span>
-              <ArrowRight className="size-2.5" />
-              <span className="rounded-full border border-border/30 px-2 py-0.5">3 Launch Plan</span>
+            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground/70">
+              <span className="rounded-full border border-border/60 px-3 py-1">1 Discover</span>
+              <ArrowRight className="size-3.5" />
+              <span className="rounded-full border border-border/60 px-3 py-1">2 Validate</span>
+              <ArrowRight className="size-3.5" />
+              <span className="rounded-full border border-border/60 px-3 py-1">3 Launch Plan</span>
             </div>
           </div>
         )}
 
         {/* Opportunity zones */}
         {streaming && zones.length === 0 && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground/60 px-1">
-            <Loader2 className="size-3 animate-spin" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
+            <Loader2 className="size-4 animate-spin" />
             Mapping your opportunity landscape…
           </div>
         )}
@@ -1338,19 +1372,19 @@ function DiscoverResults({
 
                     {/* Why you / why now */}
                     {idea.whyYou && (
-                      <p className="text-[11px] text-foreground/75 leading-relaxed">
-                        <span className="text-muted-foreground/60">Why you: </span>{idea.whyYou}
+                      <p className="text-xs text-foreground/85 leading-relaxed">
+                        <span className="text-muted-foreground">Why you: </span>{idea.whyYou}
                       </p>
                     )}
                     {idea.whyNow && (
-                      <p className="text-[11px] text-foreground/75 leading-relaxed">
-                        <span className="text-muted-foreground/60">Why now: </span>{idea.whyNow}
+                      <p className="text-xs text-foreground/85 leading-relaxed">
+                        <span className="text-muted-foreground">Why now: </span>{idea.whyNow}
                       </p>
                     )}
 
                     {/* Monetization */}
                     {idea.monetizationPath && (
-                      <p className="rounded-md bg-muted/30 px-2 py-1 text-[11px] text-muted-foreground">
+                      <p className="rounded-md bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
                         💰 {idea.monetizationPath}
                       </p>
                     )}
@@ -1358,15 +1392,15 @@ function DiscoverResults({
                     {/* Founder fit scores */}
                     {fit && (fit.skillMatch || fit.distributionAdvantage || fit.executionSpeed || fit.monetizationFit) && (
                       <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-border/30 pt-2">
-                        <span className="text-[10px] text-muted-foreground/50 w-full">Founder fit</span>
+                        <span className="text-xs text-muted-foreground w-full font-medium">Founder fit</span>
                         <FitDot score={fit.skillMatch} />
-                        <span className="text-[10px] text-muted-foreground/40">skill match</span>
+                        <span className="text-xs text-muted-foreground/70">skill match</span>
                         <FitDot score={fit.distributionAdvantage} />
-                        <span className="text-[10px] text-muted-foreground/40">distribution</span>
+                        <span className="text-xs text-muted-foreground/70">distribution</span>
                         <FitDot score={fit.executionSpeed} />
-                        <span className="text-[10px] text-muted-foreground/40">exec speed</span>
+                        <span className="text-xs text-muted-foreground/70">exec speed</span>
                         <FitDot score={fit.monetizationFit} />
-                        <span className="text-[10px] text-muted-foreground/40">monetization</span>
+                        <span className="text-xs text-muted-foreground/70">monetization</span>
                       </div>
                     )}
 
@@ -1374,7 +1408,7 @@ function DiscoverResults({
                     {(idea.tags?.length ?? 0) > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {idea.tags!.map((tag, j) => tag && (
-                          <Badge key={j} variant="secondary" className="text-[10px]">{tag}</Badge>
+                          <Badge key={j} variant="secondary" className="text-xs">{tag}</Badge>
                         ))}
                       </div>
                     )}

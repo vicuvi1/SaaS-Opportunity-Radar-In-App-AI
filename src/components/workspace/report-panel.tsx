@@ -52,7 +52,7 @@ function ScoreBar({ label, value, invert, explanation }: {
         <div className={`h-full rounded-full ${barColor}`} style={{ width: `${v}%` }} />
       </div>
       {open && (
-        <div className="rounded-md border border-border/50 bg-muted/30 px-2.5 py-2 text-[11px] space-y-1.5">
+        <div className="rounded-md border border-border/50 bg-muted/30 px-2.5 py-2 text-xs space-y-1.5">
           {SCORE_HOW[label] && <p className="text-muted-foreground">{SCORE_HOW[label]}</p>}
           {explanation && <p className="text-foreground/80">{explanation}</p>}
         </div>
@@ -71,9 +71,9 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
   if (!partial && !streaming) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-        <Gauge className="size-10 opacity-20" />
-        <p className="text-sm font-medium text-foreground">No verdict yet</p>
-        <p className="text-xs text-muted-foreground">Run the analysis on the left to get a fast verdict on your idea.</p>
+        <Gauge className="size-14 opacity-50 text-primary" />
+        <p className="text-base font-semibold text-foreground">No verdict yet</p>
+        <p className="text-sm text-muted-foreground">Run the analysis on the left to get a fast verdict on your idea.</p>
       </div>
     );
   }
@@ -147,7 +147,7 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
           )}
 
           {partial?.dataRetrievalNote && (
-            <p className="text-[10px] text-muted-foreground/50 border-t border-border/30 pt-3">
+            <p className="text-xs text-muted-foreground border-t border-border/30 pt-3">
               {partial.dataRetrievalNote}
             </p>
           )}
@@ -187,7 +187,7 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
                     <Icon className={`size-3.5 shrink-0 mt-0.5 ${iconColor}`} />
                     <p className="text-xs text-foreground/85 leading-relaxed flex-1">{s.observation}</p>
                     {s.wtpEvidence && (
-                      <span className="shrink-0 text-[10px] rounded-full bg-violet-600/20 text-violet-300 px-1.5 py-0.5 font-medium">
+                      <span className="shrink-0 text-xs rounded-full bg-violet-600/20 text-violet-300 px-1.5 py-0.5 font-medium">
                         💰 WTP
                       </span>
                     )}
@@ -197,7 +197,7 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
             </div>
             {(partial?.weakDemandSignals?.length ?? 0) > 0 && (
               <div className="rounded-xl border border-border/50 bg-muted/10 px-3 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-1.5">Weak signals</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Weak signals</p>
                 <ul className="space-y-1">
                   {partial!.weakDemandSignals!.map((s, i) => (
                     <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
@@ -232,7 +232,7 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
                isYellow ? "There's potential here, but key questions remain." :
                           "Weak in raw form. Worth exploring what it would take to fix it."}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {score >= 40
                 ? "Head to Launch Plan to define positioning, MVP, GTM, and turn this into a real business plan."
                 : "Launch Plan can help you explore pivots and repositioning before you commit further."}
@@ -257,7 +257,7 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
       {children}
     </p>
   );

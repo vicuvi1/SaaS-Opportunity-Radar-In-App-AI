@@ -148,7 +148,7 @@ export function ChipGroup({
             <button
               type="button"
               onClick={() => { addCustom(query); setQuery(""); }}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
             >
               <Plus className="size-3" />
               Add

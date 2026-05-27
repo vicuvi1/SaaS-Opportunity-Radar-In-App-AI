@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, Zap } from "lucide-react";
 import { useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
@@ -130,13 +130,20 @@ export function SignInCard({ onClose, defaultMode = "signin" }: { onClose?: () =
     <div className="rounded-2xl border border-border/70 bg-card shadow-xl">
       <div className="border-b border-border/70 px-6 py-5">
         <p className="text-base font-semibold">
-          {mode === "signin" ? "Welcome back" : "Create your account"}
+          {mode === "signin" ? "Welcome back" : "Create your free account"}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {mode === "signin"
-            ? "Sign in to access your saved reports and sessions."
-            : "Save reports, revisit sessions, and access from any device."}
-        </p>
+        {mode === "signup" ? (
+          <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary/8 px-3 py-1.5">
+            <Zap className="size-3.5 shrink-0 text-primary" />
+            <p className="text-xs font-medium text-foreground">
+              Get <span className="text-primary">10 free credits</span> on signup - no card needed
+            </p>
+          </div>
+        ) : (
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Sign in to access your saved reports and sessions.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 px-6 py-5">

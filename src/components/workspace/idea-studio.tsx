@@ -1315,7 +1315,7 @@ function DiscoverResults({
             <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
               {hasProfile
                 ? "Describe a niche or market above, then click Generate. We'll map the startup opportunities you're best positioned to execute."
-                : "Describe a niche or problem above, or set your Founder Profile — the engine maps opportunities matched to your real distribution advantages."}
+                : "Describe a niche or problem above, or set your Founder Profile. The engine maps opportunities matched to your real distribution advantages."}
             </p>
             <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground/70">
               <span className="rounded-full border border-border/60 px-3 py-1">1 Discover</span>

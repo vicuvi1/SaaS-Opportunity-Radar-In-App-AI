@@ -23,13 +23,13 @@ export function SignupGateModal({ open, onOpenChange }: Props) {
           <X className="size-4" />
         </button>
 
-        <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-center">
-          <div className="flex items-center justify-center gap-2">
+        <div className="mb-4 rounded-xl border border-primary/30 bg-primary/8 px-4 py-3 text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
             <Zap className="size-4 text-primary" />
-            <p className="text-sm font-semibold">You've used your free trial</p>
+            <p className="text-sm font-semibold">You used your free trial</p>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Sign up free to get 10 credits — enough for 3 more validations.
+          <p className="text-xs text-muted-foreground">
+            Create a free account and get <span className="font-semibold text-foreground">10 credits instantly</span> - enough for 3 full validations.
           </p>
         </div>
 

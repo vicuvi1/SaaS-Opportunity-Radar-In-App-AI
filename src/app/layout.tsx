@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s | FounderHQ",
   },
   description:
-    "FounderHQ pulls real posts from Reddit, Hacker News, GitHub, and Stack Overflow to score your startup idea against your actual goal — side project, funded startup, or anything in between. Know if your idea has demand before you write a line of code.",
+    "FounderHQ pulls real posts from Reddit, Hacker News, GitHub, and Stack Overflow to score your startup idea against your actual goal: side project, funded startup, or anything in between. Know if your idea has demand before you write a line of code.",
   keywords: [
     "startup idea validation",
     "validate startup idea",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FounderHQ | Validate Startup Ideas Before You Build",
     description:
-      "Real posts from Reddit, HN, GitHub, and Stack Overflow — scored for your startup goal. Know before you build.",
+      "Real posts from Reddit, HN, GitHub, and Stack Overflow, scored for your startup goal. Know before you build.",
     siteName: "FounderHQ",
     locale: "en_US",
     type: "website",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "FounderHQ | Validate Startup Ideas Before You Build",
     description:
-      "Real posts from Reddit, HN, GitHub, and Stack Overflow — scored for your startup goal. Know before you build.",
+      "Real posts from Reddit, HN, GitHub, and Stack Overflow, scored for your startup goal. Know before you build.",
   },
   robots: {
     index: true,

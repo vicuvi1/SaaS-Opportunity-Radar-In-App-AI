@@ -11,7 +11,7 @@ import { ideaReportSchema, type IdeaReport } from "@/lib/schemas/idea-report";
 import { ideaDiscoverySchema, type DiscoveryIdea, type IdeaDiscovery } from "@/lib/schemas/idea-discovery";
 import { z } from "zod";
 import { founderProfileToText, type FounderProfile } from "@/lib/profile/founder-profile";
-import type { ForgeThread } from "@/lib/workspace/types";
+import type { BlueprintResult, ForgeThread } from "@/lib/workspace/types";
 import { ReportPanel } from "@/components/workspace/report-panel";
 import { FinisherBlueprint, GoalSelector } from "@/components/workspace/finisher-blueprint";
 import { Badge } from "@/components/ui/badge";
@@ -154,7 +154,7 @@ export function IdeaStudio({
   const [topic, setTopic] = useState(thread.topic);
   const [founder, setFounder] = useState(thread.founderProfile);
   const [niche, setNiche] = useState("");
-  const [planGoal, setPlanGoal] = useState<string>("");
+  const [planGoal, setPlanGoal] = useState<string>(thread.blueprintResult?.planGoal ?? "");
   const [refineInput, setRefineInput] = useState("");
   const [formCollapsed, setFormCollapsed] = useState(!!thread.report);
   const [finishDismissedValidated, setFinishDismissedValidated] = useState(false);
@@ -290,7 +290,16 @@ export function IdeaStudio({
   } = useObject({
     api: "/api/finish",
     schema: z.record(z.string(), z.unknown()),
-    onFinish: () => { onRefreshCredits?.(); },
+    initialValue: thread.blueprintResult?.data ?? undefined,
+    onFinish: ({ object: finished }: { object: Record<string, unknown> | undefined; error: unknown }) => {
+      onRefreshCredits?.();
+      if (finished) {
+        onPatch({
+          blueprintResult: { planGoal, data: finished } satisfies BlueprintResult,
+          updatedAt: Date.now(),
+        });
+      }
+    },
     onError: (err: Error) => { if (isCreditError(err)) onBuyCredits?.(); },
   });
 
@@ -958,7 +967,7 @@ export function IdeaStudio({
               onUnsaveIdea={onUnsaveIdea}
             />
           ) : mode === "validate" ? (
-            analyzing ? <AnalysisLoading /> : <ReportPanel partial={report} streaming={false} onSwitchToFinisher={() => setMode("finish")} />
+            (analyzing && !report?.title) ? <AnalysisLoading /> : <ReportPanel partial={report} streaming={analyzing} onSwitchToFinisher={() => setMode("finish")} />
           ) : (
             <FinisherBlueprint
               blueprint={blueprint}

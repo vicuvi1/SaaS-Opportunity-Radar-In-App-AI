@@ -1,6 +1,11 @@
 import type { IdeaReport } from "@/lib/schemas/idea-report";
 import type { IdeaDiscovery } from "@/lib/schemas/idea-discovery";
 
+export type BlueprintResult = {
+  planGoal: string;
+  data: Record<string, unknown>;
+};
+
 export type ForgeThread = {
   id: string;
   title: string;
@@ -11,4 +16,5 @@ export type ForgeThread = {
   favorite?: boolean;
   report?: IdeaReport | null;
   discoveryResult?: IdeaDiscovery | null;
+  blueprintResult?: BlueprintResult | null;
 };

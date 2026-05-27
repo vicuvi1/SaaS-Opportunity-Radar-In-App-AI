@@ -1,5 +1,5 @@
 ﻿import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ForgeThread } from "@/lib/workspace/types";
+import type { BlueprintResult, ForgeThread } from "@/lib/workspace/types";
 import type { StorageProvider, StoredMessage } from "./types";
 
 /** Maximum messages stored per thread. Oldest are dropped when exceeded. */
@@ -13,7 +13,7 @@ export function createSupabaseProvider(
     async loadThreads() {
       const { data, error } = await supabase
         .from("threads")
-        .select("*, idea_reports(payload, updated_at), discovery_results(payload, updated_at)")
+        .select("*, idea_reports(payload, updated_at), discovery_results(payload, updated_at), blueprint_results(payload, updated_at)")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false });
 
@@ -26,6 +26,9 @@ export function createSupabaseProvider(
         const discoveryRow = Array.isArray(row.discovery_results)
           ? row.discovery_results[0]
           : row.discovery_results;
+        const blueprintRow = Array.isArray(row.blueprint_results)
+          ? row.blueprint_results[0]
+          : row.blueprint_results;
         return {
           id: row.id as string,
           title: row.title as string,
@@ -36,6 +39,7 @@ export function createSupabaseProvider(
           updatedAt: new Date(row.updated_at as string).getTime(),
           report: reportRow?.payload ?? null,
           discoveryResult: discoveryRow?.payload ?? null,
+          blueprintResult: (blueprintRow?.payload as BlueprintResult) ?? null,
         } satisfies ForgeThread;
       });
     },
@@ -92,6 +96,23 @@ export function createSupabaseProvider(
           );
         if (discoveryError) {
           console.error("[storage] discovery upsert error:", discoveryError.message, discoveryError.code, "| thread:", thread.id);
+        }
+      }
+
+      if (thread.blueprintResult) {
+        const { error: blueprintError } = await supabase
+          .from("blueprint_results")
+          .upsert(
+            {
+              thread_id: thread.id,
+              user_id: userId,
+              payload: thread.blueprintResult,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "thread_id" },
+          );
+        if (blueprintError) {
+          console.error("[storage] blueprint upsert error:", blueprintError.message, blueprintError.code, "| thread:", thread.id);
         }
       }
     },

@@ -62,8 +62,8 @@ export function SignInDialog({ user }: { user: User | null }) {
 }
 
 // ── Reusable sign-in / sign-up card ─────────────────────────────────────────
-export function SignInCard({ onClose }: { onClose?: () => void }) {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+export function SignInCard({ onClose, defaultMode = "signin" }: { onClose?: () => void; defaultMode?: "signin" | "signup" }) {
+  const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

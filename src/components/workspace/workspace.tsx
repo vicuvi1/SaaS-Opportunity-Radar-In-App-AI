@@ -12,7 +12,7 @@ import {
   type StorageProvider,
 } from "@/lib/storage";
 import Image from "next/image";
-import { SignInCard, SignInDialog } from "@/components/auth/sign-in-sheet";
+import { SignInDialog } from "@/components/auth/sign-in-sheet";
 import { IdeaStudio } from "@/components/workspace/idea-studio";
 import { ReportPanel } from "@/components/workspace/report-panel";
 import { FounderProfileOnboarding } from "@/components/onboarding/founder-profile-onboarding";
@@ -52,6 +52,9 @@ import {
 import { CreditsBadge } from "@/components/credits/credits-badge";
 import { BuyCreditsModal } from "@/components/credits/buy-credits-modal";
 import { useCredits } from "@/components/credits/use-credits";
+import { SignupGateModal } from "@/components/auth/signup-gate-modal";
+import { useFingerprint } from "@/hooks/use-fingerprint";
+import { useAnonCredits } from "@/hooks/use-anon-credits";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function newBlankThread(): ForgeThread {
@@ -89,7 +92,15 @@ export function Workspace() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [savedIdeas, setSavedIdeas] = useState<SavedIdea[]>([]);
   const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
-  const { credits, loading: creditsLoading, refresh: refreshCredits } = useCredits();
+  const [signupGateOpen, setSignupGateOpen] = useState(false);
+  const { credits: authCredits, loading: authCreditsLoading, refresh: refreshAuthCredits } = useCredits();
+  const fingerprint = useFingerprint();
+  const { credits: anonCredits, loading: anonCreditsLoading, refresh: refreshAnonCredits } = useAnonCredits(
+    authChecked && !user ? fingerprint : null,
+  );
+  const credits = user ? authCredits : anonCredits;
+  const creditsLoading = user ? authCreditsLoading : anonCreditsLoading;
+  const refreshCredits = user ? refreshAuthCredits : refreshAnonCredits;
   // Stable ref to supabase client for use inside saved-idea callbacks.
   const supabaseRef = useRef<ReturnType<typeof createClient>>(null);
 
@@ -184,6 +195,29 @@ export function Workspace() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // ── Initialize local threads for anonymous visitors ────────────────────────
+  const anonInitRef = useRef(false);
+  useEffect(() => {
+    if (!authChecked || user || anonInitRef.current) return;
+    anonInitRef.current = true;
+
+    localProvider.loadThreads().then((loaded) => {
+      if (loaded.length > 0) {
+        const sorted = [...loaded].sort((a, b) => b.updatedAt - a.updatedAt);
+        setThreads(sorted);
+        setActiveId(sorted[0].id);
+        setLiveReport(sorted[0].report ?? undefined);
+      } else {
+        const blank = newBlankThread();
+        void localProvider.upsertThread(blank);
+        preloadedForRef.current = blank.id;
+        setActiveMessages([]);
+        setThreads([blank]);
+        setActiveId(blank.id);
+      }
+    });
+  }, [authChecked, user]);
 
   // ── Load messages when active thread or provider changes ──────────────────
   useEffect(() => {
@@ -379,20 +413,6 @@ export function Workspace() {
     );
   }
 
-  // Auth gate - show sign-in screen until user is confirmed
-  if (!user) {
-    return (
-      <div className="noise-overlay subtle-grid relative flex h-[100dvh] flex-col items-center justify-center bg-background text-foreground">
-        <div className="mb-8 text-center">
-          <Image src="/brand/logo/logo-stacked-white.png" alt="FounderHQ" width={120} height={80} />
-        </div>
-        <div className="w-full max-w-sm px-4">
-          <SignInCard />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="noise-overlay subtle-grid relative flex h-[100dvh] flex-col bg-background text-foreground">
       {showOnboarding && user && (
@@ -418,44 +438,53 @@ export function Workspace() {
           <CreditsBadge
             credits={credits}
             loading={creditsLoading}
-            onClick={() => setBuyCreditsOpen(true)}
+            onClick={() => user ? setBuyCreditsOpen(true) : setSignupGateOpen(true)}
           />
-          <BuyCreditsModal
-            open={buyCreditsOpen}
-            onOpenChange={setBuyCreditsOpen}
-            currentCredits={credits}
-            onPurchased={refreshCredits}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5 border-border/70 bg-background/70 md:hidden"
-            onClick={() => setMobileSidebarOpen(true)}
-          >
-            <List className="size-3.5" />
-            <span className="hidden xs:inline">Sessions</span>
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-          >
-            <Settings className="size-4 text-muted-foreground" />
-          </Button>
+          {user && (
+            <BuyCreditsModal
+              open={buyCreditsOpen}
+              onOpenChange={setBuyCreditsOpen}
+              currentCredits={credits}
+              onPurchased={refreshCredits}
+            />
+          )}
+          <SignupGateModal open={signupGateOpen && !user} onOpenChange={setSignupGateOpen} />
+          {user && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-border/70 bg-background/70 md:hidden"
+              onClick={() => setMobileSidebarOpen(true)}
+            >
+              <List className="size-3.5" />
+              <span className="hidden xs:inline">Sessions</span>
+            </Button>
+          )}
+          {user && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Settings"
+            >
+              <Settings className="size-4 text-muted-foreground" />
+            </Button>
+          )}
           <SignInDialog user={user} />
         </div>
       </header>
 
-      <SettingsPanel
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        user={user}
-        founderProfile={founderProfile}
-        onProfileUpdate={setFounderProfile}
-      />
+      {user && (
+        <SettingsPanel
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          user={user}
+          founderProfile={founderProfile}
+          onProfileUpdate={setFounderProfile}
+        />
+      )}
 
       {/* Mobile sessions sheet */}
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
@@ -537,8 +566,8 @@ export function Workspace() {
       </Sheet>
 
       <div className="flex min-h-0 flex-1">
-        {/* Sidebar - desktop only */}
-        <aside
+        {/* Sidebar - desktop only, authenticated users only */}
+        {user && <aside
           className={`hidden shrink-0 flex-col border-r border-border/70 bg-card transition-[width] duration-200 md:flex ${
             sidebarOpen ? "w-[240px]" : "w-12"
           } overflow-hidden`}
@@ -663,7 +692,7 @@ export function Workspace() {
               </ScrollArea>
             </>
           )}
-        </aside>
+        </aside>}
 
         {/* Main content */}
         {active && messagesReady ? (
@@ -678,11 +707,14 @@ export function Workspace() {
             onNewThread={createThread}
             founderProfile={founderProfile}
             onOpenSettings={() => setSettingsOpen(true)}
-            onBuyCredits={() => setBuyCreditsOpen(true)}
+            onBuyCredits={user ? () => setBuyCreditsOpen(true) : undefined}
+            onSignUp={() => setSignupGateOpen(true)}
             onRefreshCredits={refreshCredits}
             savedIdeas={savedIdeas}
             onSaveIdea={handleSaveIdea}
             onUnsaveIdea={handleUnsaveIdea}
+            isAnonymous={!user}
+            fingerprint={fingerprint}
           />
         ) : (
           <div className="flex flex-1 items-center justify-center">

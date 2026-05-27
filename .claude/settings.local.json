@@ -51,7 +51,9 @@
       "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(s.LATEST_API_VERSION\\)\")",
       "Bash(node -e \"const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_x'\\); console.log\\(s.VERSION\\)\")",
       "Bash(node -e \"const t = require\\('./node_modules/stripe/dist/stripe.js'\\); const s = new t.default\\('sk_test_x'\\); console.log\\(s._api.version\\)\")",
-      "Bash(Select-String -Pattern \"next.config|tsconfig|package.json|\\\\.env\")"
+      "Bash(Select-String -Pattern \"next.config|tsconfig|package.json|\\\\.env\")",
+      "Bash(npm list *)",
+      "Bash(npm uninstall *)"
     ]
   }
 }

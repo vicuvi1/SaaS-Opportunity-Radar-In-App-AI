@@ -60,6 +60,11 @@ function isCreditError(e: Error | undefined | null): boolean {
   return msg.includes("insufficient credits") || msg.includes("402") || msg.includes("not enough credits");
 }
 
+function isAnonLimitError(e: Error | undefined | null): boolean {
+  if (!e) return false;
+  return (e.message?.toLowerCase() ?? "").includes("sign up to continue");
+}
+
 function CreditCost({ cost }: { cost: number }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
@@ -120,10 +125,13 @@ export function IdeaStudio({
   founderProfile,
   onOpenSettings,
   onBuyCredits,
+  onSignUp,
   onRefreshCredits,
   savedIdeas = [],
   onSaveIdea,
   onUnsaveIdea,
+  isAnonymous = false,
+  fingerprint = null,
 }: {
   thread: ForgeThread;
   onPatch: (patch: Partial<ForgeThread>) => void;
@@ -135,10 +143,13 @@ export function IdeaStudio({
   founderProfile?: FounderProfile | null;
   onOpenSettings?: (open?: boolean) => void;
   onBuyCredits?: () => void;
+  onSignUp?: () => void;
   onRefreshCredits?: () => void;
   savedIdeas?: SavedIdea[];
   onSaveIdea?: (idea: Omit<SavedIdea, "id" | "savedAt">) => void;
   onUnsaveIdea?: (id: string) => void;
+  isAnonymous?: boolean;
+  fingerprint?: string | null;
 }) {
   const [mode, setMode] = useState<Mode>("create");
   const [mobileTab, setMobileTab] = useState<"main" | "chat">("main");
@@ -259,7 +270,10 @@ export function IdeaStudio({
         });
       }
     },
-    onError: (err: Error) => { if (isCreditError(err)) onBuyCredits?.(); },
+    onError: (err: Error) => {
+      if (isAnonLimitError(err)) onSignUp?.();
+      else if (isCreditError(err)) onBuyCredits?.();
+    },
   });
 
   const {
@@ -279,7 +293,10 @@ export function IdeaStudio({
         onPatch({ discoveryResult: finished, updatedAt: Date.now() });
       }
     },
-    onError: (err: Error) => { if (isCreditError(err)) onBuyCredits?.(); },
+    onError: (err: Error) => {
+      if (isAnonLimitError(err)) onSignUp?.();
+      else if (isCreditError(err)) onBuyCredits?.();
+    },
   });
 
   const {
@@ -300,7 +317,10 @@ export function IdeaStudio({
         });
       }
     },
-    onError: (err: Error) => { if (isCreditError(err)) onBuyCredits?.(); },
+    onError: (err: Error) => {
+      if (isAnonLimitError(err)) onSignUp?.();
+      else if (isCreditError(err)) onBuyCredits?.();
+    },
   });
 
   useEffect(() => {
@@ -331,20 +351,22 @@ export function IdeaStudio({
     const profileText = founderProfile ? founderProfileToText(founderProfile) : founder.trim();
     onPatch({ topic: t, founderProfile: profileText, updatedAt: Date.now() });
     clearAnalyze();
-    submitAnalyze({ topic: t, founderProfile: profileText });
-  }, [topic, founder, founderProfile, submitAnalyze, clearAnalyze, onPatch]);
+    submitAnalyze({ topic: t, founderProfile: profileText, ...(fingerprint ? { anonFp: fingerprint } : {}) });
+  }, [topic, founder, founderProfile, fingerprint, submitAnalyze, clearAnalyze, onPatch]);
 
   const runDiscover = useCallback(() => {
     clearDiscover();
     submitDiscover({
       niche: niche.trim(),
       founderProfileText: founderProfile ? founderProfileToText(founderProfile) : undefined,
+      ...(fingerprint ? { anonFp: fingerprint } : {}),
     });
-  }, [niche, founderProfile, submitDiscover, clearDiscover]);
+  }, [niche, founderProfile, fingerprint, submitDiscover, clearDiscover]);
 
   const activeReport = report ?? (thread.report ? thread.report : undefined);
 
   const runFinisher = useCallback(() => {
+    if (isAnonymous) { onSignUp?.(); return; }
     if (!planGoal) return;
     const validatedReport = report ?? thread.report;
     const useValidated = !!validatedReport && !finishDismissedValidated;
@@ -360,7 +382,7 @@ export function IdeaStudio({
       report: useValidated ? (thread.report ?? undefined) : undefined,
       planGoal: planGoal || undefined,
     });
-  }, [topic, founder, founderProfile, thread, report, finishDismissedValidated, finishCustomTopic, planGoal, submitFinisher, clearBlueprint]);
+  }, [isAnonymous, onSignUp, topic, founder, founderProfile, thread, report, finishDismissedValidated, finishCustomTopic, planGoal, submitFinisher, clearBlueprint]);
 
   const validateIdea = useCallback((idea: DiscoveryIdea) => {
     setMode("validate");

@@ -4,22 +4,24 @@ import { extractSearchQuery } from "@/lib/demand/extract-query";
 import { getAnalystModel } from "@/lib/ai/model";
 import { ANALYST_SYSTEM, buildAnalystPrompt } from "@/lib/ai/prompts";
 import { ideaReportSchema } from "@/lib/schemas/idea-report";
-import { requireCredits, deductCredits } from "@/lib/credits";
+import { requireAnonOrUserCredits, deductCredits } from "@/lib/credits";
+import { deductAnonCredits } from "@/lib/anon-credits";
 import { CREDIT_COSTS } from "@/lib/stripe";
 
 export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {
-    const { user, error: authError } = await requireCredits(CREDIT_COSTS.validate);
-    if (authError) return authError;
-
     const body = (await req.json()) as {
       topic?: string;
       founderProfile?: string;
       pastedSignals?: string;
       digest?: string;
+      anonFp?: unknown;
     };
+
+    const { user, anonFp, error: authError } = await requireAnonOrUserCredits(body, CREDIT_COSTS.validate);
+    if (authError) return authError;
 
     const topic = String(body.topic ?? "").trim().slice(0, 2000);
     if (!topic) {
@@ -60,9 +62,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const deducted = await deductCredits(user.id, CREDIT_COSTS.validate, `Validate: ${topic.slice(0, 80)}`);
-    if (!deducted) {
-      return Response.json({ error: "Insufficient credits.", required: CREDIT_COSTS.validate }, { status: 402 });
+    // Deduct credits (user or anonymous) just before the AI call.
+    if (user) {
+      const deducted = await deductCredits(user.id, CREDIT_COSTS.validate, `Validate: ${topic.slice(0, 80)}`);
+      if (!deducted) {
+        return Response.json({ error: "Insufficient credits.", required: CREDIT_COSTS.validate }, { status: 402 });
+      }
+    } else {
+      const deducted = await deductAnonCredits(anonFp!, CREDIT_COSTS.validate);
+      if (!deducted) {
+        return Response.json({ error: "Sign up to continue.", requireAuth: true }, { status: 401 });
+      }
     }
 
     const result = streamText({

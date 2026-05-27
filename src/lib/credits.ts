@@ -1,5 +1,7 @@
+import type { User } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { parseAnonFp, getAnonCredits } from "@/lib/anon-credits";
 
 /** Fetch the current credit balance for the authenticated user (server-side). */
 export async function getCredits(userId: string): Promise<number> {
@@ -13,7 +15,7 @@ export async function getCredits(userId: string): Promise<number> {
 
   if (error || !data) {
     // Row doesn't exist yet — new user, return default
-    return 20;
+    return 10;
   }
   return data.credits as number;
 }
@@ -103,4 +105,63 @@ export async function requireCredits(amount: number) {
   }
 
   return { user, error: null };
+}
+
+/**
+ * Route-handler helper that allows both authenticated and anonymous usage.
+ *
+ * Authenticated users are checked against user_credits.
+ * Anonymous users are checked against anonymous_sessions via a fingerprint ID
+ * embedded in the parsed request body as `anonFp`.
+ *
+ * Returns:
+ *  - { user, anonFp: null, error: null } for authenticated users
+ *  - { user: null, anonFp, error: null } for valid anonymous sessions
+ *  - { user: null, anonFp: null, error: Response } on any failure
+ */
+export async function requireAnonOrUserCredits(
+  parsedBody: Record<string, unknown>,
+  amount: number,
+): Promise<
+  | { user: User; anonFp: null; error: null }
+  | { user: null; anonFp: string; error: null }
+  | { user: null; anonFp: null; error: Response }
+> {
+  const supabase = await createServerClient();
+  if (supabase) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      if (amount > 0) {
+        const balance = await getCredits(user.id);
+        if (balance < amount) {
+          return {
+            user: null, anonFp: null,
+            error: Response.json({ error: "Insufficient credits.", required: amount, balance }, { status: 402 }),
+          };
+        }
+      }
+      return { user, anonFp: null, error: null };
+    }
+  }
+
+  // Anonymous path — fingerprint from request body
+  const fp = parseAnonFp(parsedBody.anonFp);
+  if (!fp) {
+    return {
+      user: null, anonFp: null,
+      error: Response.json({ error: "Authentication required." }, { status: 401 }),
+    };
+  }
+
+  if (amount > 0) {
+    const balance = await getAnonCredits(fp);
+    if (balance < amount) {
+      return {
+        user: null, anonFp: null,
+        error: Response.json({ error: "Sign up to continue.", requireAuth: true }, { status: 401 }),
+      };
+    }
+  }
+
+  return { user: null, anonFp: fp, error: null };
 }

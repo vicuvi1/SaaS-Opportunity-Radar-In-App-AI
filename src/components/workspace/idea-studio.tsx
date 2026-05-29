@@ -165,6 +165,7 @@ export function IdeaStudio({
   const [topic, setTopic] = useState(thread.topic);
   const [founder, setFounder] = useState(thread.founderProfile);
   const [niche, setNiche] = useState("");
+  const [discoverInputError, setDiscoverInputError] = useState("");
   const [planGoal, setPlanGoal] = useState<string>(thread.blueprintResult?.planGoal ?? "");
   const [refineInput, setRefineInput] = useState("");
   const [formCollapsed, setFormCollapsed] = useState(!!thread.report);
@@ -355,6 +356,11 @@ export function IdeaStudio({
   }, [topic, founder, founderProfile, fingerprint, submitAnalyze, clearAnalyze, onPatch]);
 
   const runDiscover = useCallback(() => {
+    if (!niche.trim() && !founderProfile) {
+      setDiscoverInputError("no-input");
+      return;
+    }
+    setDiscoverInputError("");
     clearDiscover();
     submitDiscover({
       niche: niche.trim(),
@@ -447,49 +453,36 @@ export function IdeaStudio({
         <div className="glass-panel shrink-0 border-b border-border/70 px-3 py-3 sm:px-5">
 
           {/* Mode toggle - always visible */}
-          <div className="mb-3 flex w-full gap-1 rounded-xl border border-border/60 bg-muted/30 p-1 sm:w-fit">
-            <button
-              type="button"
-              onClick={() => setMode("create")}
-              className={`flex flex-1 flex-col items-center justify-center gap-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
-                mode === "create"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="flex items-center gap-1.5"><Sparkles className="size-3.5" />Discover</span>
-              <span className={`text-xs font-normal leading-none mt-0.5 ${mode === "create" ? "text-muted-foreground" : "text-muted-foreground/60"}`}>find ideas</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("validate")}
-              className={`flex flex-1 flex-col items-center justify-center gap-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
-                mode === "validate"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="flex items-center gap-1.5"><Target className="size-3.5" />Validate</span>
-              <span className={`text-xs font-normal leading-none mt-0.5 ${mode === "validate" ? "text-muted-foreground" : "text-muted-foreground/60"}`}>check demand</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (activeReport) {
-                  setMode("finish");
-                } else {
-                  setShowFinishConfirm(true);
-                }
-              }}
-              className={`flex flex-1 flex-col items-center justify-center gap-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all sm:flex-none ${
-                mode === "finish"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="flex items-center gap-1.5"><Rocket className="size-3.5" />Launch Plan</span>
-              <span className={`text-xs font-normal leading-none mt-0.5 ${mode === "finish" ? "text-muted-foreground" : "text-muted-foreground/60"}`}>build blueprint</span>
-            </button>
+          <div className="mb-4 flex w-full gap-1 rounded-xl border border-border/50 bg-muted/20 p-1">
+            {(
+              [
+                { id: "create", n: "1", label: "Discover", sub: "find ideas", onClick: () => setMode("create") },
+                { id: "validate", n: "2", label: "Validate", sub: "check demand", onClick: () => setMode("validate") },
+                { id: "finish", n: "3", label: "Launch Plan", sub: "build blueprint", onClick: () => { if (activeReport) { setMode("finish"); } else { setShowFinishConfirm(true); } } },
+              ] as const
+            ).map(({ id, n, label, sub, onClick }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={onClick}
+                className={`flex flex-1 items-center justify-center gap-0 rounded-lg px-2 py-4 transition-all sm:px-4 ${
+                  mode === id
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-foreground/75 bg-primary/[0.06] shadow-[0_0_0_1px_hsl(var(--primary)/0.18),0_0_10px_hsl(var(--primary)/0.08)] hover:bg-primary/[0.1] hover:text-foreground"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${mode === id ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary/70"}`}>{n}</span>
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="text-[17px] font-semibold leading-none">
+                      <span className="hidden sm:inline">{label}</span>
+                      <span className="sm:hidden">{label === "Launch Plan" ? "Launch" : label}</span>
+                    </span>
+                    <span className={`hidden text-xs font-normal sm:inline ${mode === id ? "text-muted-foreground" : "text-foreground/40"}`}>{sub}</span>
+                  </span>
+                </span>
+              </button>
+            ))}
           </div>
 
           {/* Confirmation dialog - shown when entering Finisher without a validated idea */}
@@ -539,17 +532,17 @@ export function IdeaStudio({
           {mode === "create" && (
             <div className="flex flex-col gap-3">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Brainstorm with the chat on the right, or generate a full idea grid below. Your saved founder profile is used automatically.
+                Generate a grid of startup ideas tailored to your founder profile. Add a focus area below if you want to narrow the search, then click <span className="font-medium text-foreground">Generate ideas</span>.
               </p>
               <div className="space-y-1.5">
-                <Label htmlFor="niche">Anything to add? (optional)</Label>
+                <Label htmlFor="niche">Focus area <span className="font-normal text-muted-foreground">(optional)</span></Label>
                 <Textarea
                   id="niche"
                   rows={2}
-                  className="min-h-[64px] resize-none border-border/70 bg-background/65 text-sm"
-                  placeholder="Overrides your profile if there's a conflict. e.g. focus on crypto even though it's not in my profile, solo-buildable only, under $500 to launch, ignore my profile and explore healthcare..."
+                  className={`min-h-[64px] resize-none bg-background/65 text-sm transition-colors ${discoverInputError ? "border-amber-500/60 focus-visible:ring-amber-500/30" : "border-border/70"}`}
+                  placeholder={'e.g. "crypto", "healthcare", "solo-buildable only", "under $500 to launch"'}
                   value={niche}
-                  onChange={(e) => setNiche(e.target.value)}
+                  onChange={(e) => { setNiche(e.target.value); if (discoverInputError) setDiscoverInputError(""); }}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -570,6 +563,22 @@ export function IdeaStudio({
                   </Button>
                 )}
               </div>
+              {discoverInputError === "no-input" && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs">
+                  <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-amber-400" />
+                  <span className="text-amber-200/90 leading-relaxed">
+                    Enter a focus area above, or{" "}
+                    <button
+                      type="button"
+                      className="font-medium text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
+                      onClick={() => onOpenSettings?.()}
+                    >
+                      set your Founder Profile in Settings
+                    </button>{" "}
+                    so we know your background and skills.
+                  </span>
+                </div>
+              )}
               {discoverError && !isCreditError(discoverError) && (
                 <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   <TriangleAlert className="mt-0.5 size-4 shrink-0" />
@@ -744,13 +753,16 @@ export function IdeaStudio({
             ) : (
               <div className="flex flex-col gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="topic">Problem space / idea</Label>
+                  <Label htmlFor="topic">
+                    Describe your idea or problem space
+                  </Label>
                   <Input
                     id="topic"
                     data-founderhq-topic
                     placeholder='e.g. "An app that helps small restaurant owners manage reservations without paying for expensive software"'
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
+                    autoFocus={!topic}
                   />
                 </div>
                 {founderProfile?.goal?.length ? (
@@ -1309,20 +1321,33 @@ function DiscoverResults({
 
         {/* Empty state */}
         {!streaming && zones.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-4 py-14 text-center">
-            <Sparkles className="size-14 opacity-50 text-primary" />
-            <p className="text-2xl font-bold text-foreground">Your Opportunity Map</p>
-            <p className="max-w-sm text-sm text-muted-foreground leading-relaxed">
-              {hasProfile
-                ? "Describe a niche or market above, then click Generate. We'll map the startup opportunities you're best positioned to execute."
-                : "Describe a niche or problem above, or set your Founder Profile. The engine maps opportunities matched to your real distribution advantages."}
-            </p>
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground/70">
-              <span className="rounded-full border border-border/60 px-3 py-1">1 Discover</span>
-              <ArrowRight className="size-3.5" />
-              <span className="rounded-full border border-border/60 px-3 py-1">2 Validate</span>
-              <ArrowRight className="size-3.5" />
-              <span className="rounded-full border border-border/60 px-3 py-1">3 Launch Plan</span>
+          <div className="flex flex-col items-center justify-center gap-5 py-12 text-center px-6">
+            <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/[0.07]">
+              <Sparkles className="size-8 text-primary/70" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xl font-semibold text-foreground">Find your opportunity</p>
+              <p className="max-w-xs text-sm text-muted-foreground leading-relaxed">
+                {hasProfile
+                  ? "Click Generate above to get a personalized grid of startup ideas based on your background and distribution advantages."
+                  : "Click Generate above to explore startup ideas. Set your Founder Profile in Settings to get ideas matched to your specific skills and communities."}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-muted/20 px-5 py-3 text-left space-y-2 w-full max-w-xs">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">The 3-step workflow</p>
+              <div className="space-y-1.5">
+                {[
+                  { n: "1", label: "Discover", sub: "Get a tailored grid of ideas" },
+                  { n: "2", label: "Validate", sub: "Run demand analysis on any idea" },
+                  { n: "3", label: "Launch Plan", sub: "Generate a full go-to-market blueprint" },
+                ].map(({ n, label, sub }) => (
+                  <div key={n} className="flex items-center gap-2.5">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">{n}</span>
+                    <span className="text-xs font-medium text-foreground/80">{label}</span>
+                    <span className="text-xs text-muted-foreground/70">{sub}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

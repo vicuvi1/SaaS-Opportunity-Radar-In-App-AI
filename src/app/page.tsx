@@ -102,6 +102,23 @@ export default function Home() {
           </div>
         </section>
 
+        {/* How it works */}
+        <section className="mb-10 -mt-2">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {[
+              { n: "1", label: "Discover", sub: "Get ideas matched to your background" },
+              { n: "2", label: "Validate", sub: "Check real demand before you build" },
+              { n: "3", label: "Launch Plan", sub: "Turn a winning idea into a blueprint" },
+            ].map(({ n, label, sub }) => (
+              <div key={n} className="flex flex-col items-center gap-1.5 rounded-xl border border-border/60 bg-card px-2 py-3.5 text-center sm:px-4">
+                <span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">{n}</span>
+                <p className="text-xs font-semibold sm:text-sm">{label}</p>
+                <p className="hidden text-xs text-muted-foreground leading-snug sm:block">{sub}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Founder profile callout */}
         <section className="mb-12 -mt-4">
           <div className="flex items-start gap-4 rounded-2xl border border-border/70 bg-card px-5 py-4">

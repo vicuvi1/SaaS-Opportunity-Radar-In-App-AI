@@ -53,7 +53,16 @@
       "Bash(node -e \"const t = require\\('./node_modules/stripe/dist/stripe.js'\\); const s = new t.default\\('sk_test_x'\\); console.log\\(s._api.version\\)\")",
       "Bash(Select-String -Pattern \"next.config|tsconfig|package.json|\\\\.env\")",
       "Bash(npm list *)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(curl -s http://localhost:3099/)",
+      "Bash(python3 -c \"import sys; html = sys.stdin.read\\(\\); import re; tags = re.findall\\(r'<meta[^>]*\\(?:og:|twitter:|description\\)[^>]*>', html\\); [print\\(t\\) for t in tags]\")",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const m=c.match\\(/<meta[^>]*\\(og:|twitter:|description\\)[^>]*>/g\\); m && m.forEach\\(t=>console.log\\(t\\)\\);\")",
+      "Bash(curl -s http://localhost:3099/ -o \"C:/Users/bosto/AppData/Local/Temp/og-check.html\")",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('C:/Users/bosto/AppData/Local/Temp/og-check.html','utf8'\\); const m=c.match\\(/<meta[^>]*\\(og:|twitter:|canonical\\)[^>]*>/g\\); m && m.forEach\\(t=>console.log\\(t\\)\\);\")",
+      "Bash(netstat -ano)",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs kill -9)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3099 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; Write-Output \"done\")"
     ]
   }
 }

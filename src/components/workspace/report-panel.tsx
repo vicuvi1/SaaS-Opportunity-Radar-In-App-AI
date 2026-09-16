@@ -14,6 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Bookmark,
+  CheckCircle2,
 } from "lucide-react";
 
 // ── Score explainer (collapsible inline) ─────────────────────────────────────
@@ -85,6 +87,44 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
   const isGreen  = score !== null && score >= 65;
   const isYellow = score !== null && score >= 40 && score < 65;
 
+  const [savingToRadar, setSavingToRadar] = useState(false);
+  const [savedToRadar, setSavedToRadar] = useState(false);
+
+  const handleSaveToRadar = async () => {
+    if (!partial || !partial.title || savingToRadar) return;
+    setSavingToRadar(true);
+    try {
+      const res = await fetch("/api/opportunities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: partial.title,
+          description: partial.oneLiner || "Validated SaaS concept",
+          problem: partial.validationQuality?.summary || partial.oneLiner || "Identified market pain point",
+          targetCustomer: "Target B2B / SaaS customers",
+          industry: "Software / B2B SaaS",
+          researchScore: partial.validationQuality?.buildGateScore || 65,
+          source: "IdeaForge",
+          sourceType: "manual",
+          notes: [
+            {
+              id: `note-${Date.now()}`,
+              content: `Validated via IdeaForge Studio.\nVerdict: ${partial.validationQuality?.verdict || "Evaluated"}\nSummary: ${partial.validationQuality?.summary || ""}`,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        }),
+      });
+      if (res.ok) {
+        setSavedToRadar(true);
+      }
+    } catch (err) {
+      console.error("Failed to save to radar:", err);
+    } finally {
+      setSavingToRadar(false);
+    }
+  };
+
   const scoreColors = isGreen
     ? { num: "text-emerald-400", bar: "bg-emerald-500", border: "border-emerald-500/30", bg: "bg-emerald-500/[0.07]" }
     : isYellow
@@ -107,7 +147,7 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
             ) : streaming ? (
               <Loader2 className="size-8 animate-spin text-muted-foreground mt-1" />
             ) : null}
-            <div className="min-w-0 pt-1">
+            <div className="min-w-0 pt-1 flex-1">
               {gate?.verdict && (
                 <p className={`text-sm font-bold uppercase tracking-wide ${score !== null ? scoreColors.num : "text-muted-foreground"}`}>
                   {gate.verdict}
@@ -118,6 +158,27 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
               )}
               {partial?.oneLiner && (
                 <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{partial.oneLiner}</p>
+              )}
+              {partial?.title && !streaming && (
+                <div className="mt-2.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={savedToRadar ? "outline" : "secondary"}
+                    disabled={savingToRadar || savedToRadar}
+                    onClick={handleSaveToRadar}
+                    className="h-7 gap-1.5 text-xs font-medium"
+                  >
+                    {savingToRadar ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : savedToRadar ? (
+                      <CheckCircle2 className="size-3 text-emerald-400" />
+                    ) : (
+                      <Bookmark className="size-3" />
+                    )}
+                    {savedToRadar ? "Saved to Radar" : "Save as Opportunity"}
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -237,16 +298,29 @@ export function ReportPanel({ partial, streaming, onSwitchToFinisher }: {
                 ? "Head to Launch Plan to define positioning, MVP, GTM, and turn this into a real business plan."
                 : "Launch Plan can help you explore pivots and repositioning before you commit further."}
             </p>
-            <Button
-              type="button"
-              size="sm"
-              variant={isGreen ? "default" : "outline"}
-              className="gap-1.5 text-xs"
-              onClick={onSwitchToFinisher}
-            >
-              <Rocket className="size-3.5" />
-              Open Launch Plan
-            </Button>
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={isGreen ? "default" : "outline"}
+                className="gap-1.5 text-xs"
+                onClick={onSwitchToFinisher}
+              >
+                <Rocket className="size-3.5" />
+                Open Launch Plan
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={savingToRadar || savedToRadar}
+                onClick={handleSaveToRadar}
+                className="gap-1.5 text-xs"
+              >
+                {savedToRadar ? <CheckCircle2 className="size-3.5 text-emerald-400" /> : <Bookmark className="size-3.5" />}
+                {savedToRadar ? "Saved to Radar" : "Save as Opportunity"}
+              </Button>
+            </div>
           </section>
         )}
 

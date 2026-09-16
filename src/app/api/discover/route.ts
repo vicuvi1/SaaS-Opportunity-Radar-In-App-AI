@@ -1,5 +1,5 @@
 import { streamText, Output } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { getAnalystModel } from "@/lib/ai/model";
 import { DISCOVER_SYSTEM_LEAN, buildDiscoverPrompt } from "@/lib/ai/prompts";
 import { ideaDiscoverySchema } from "@/lib/schemas/idea-discovery";
 import { requireAnonOrUserCredits, deductCredits } from "@/lib/credits";
@@ -39,8 +39,16 @@ export async function POST(req: Request) {
       }
     }
 
+    let model;
+    try {
+      model = getAnalystModel();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Model configuration error.";
+      return Response.json({ error: msg }, { status: 503 });
+    }
+
     const result = streamText({
-      model: anthropic("claude-sonnet-4-6"),
+      model,
       output: Output.object({ schema: ideaDiscoverySchema }),
       system: DISCOVER_SYSTEM_LEAN,
       prompt: buildDiscoverPrompt({ niche, founderProfileText }),

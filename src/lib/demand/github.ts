@@ -1,19 +1,23 @@
 import type { RawDemandSnippet } from "./types";
 import { stripHtml } from "./strip-html";
+import { getIntegrationCredentials } from "@/lib/integrations/vault";
 
 const UA = `FounderHQ/1.0 (+${process.env.NEXT_PUBLIC_URL ?? "https://founderhq.fyi"}; startup validation research bot)`;
 
-export async function fetchGithubSignals(query: string): Promise<RawDemandSnippet[]> {
+export async function fetchGithubSignals(query: string, userId?: string): Promise<RawDemandSnippet[]> {
   const q = encodeURIComponent(`${query.trim()} type:issue`);
   const url = `https://api.github.com/search/issues?q=${q}&per_page=15&sort=reactions&order=desc`;
 
   try {
+    const creds = await getIntegrationCredentials<{ token?: string }>(userId, "github").catch(() => null);
+    const token = creds?.token || process.env.GITHUB_TOKEN;
+
     const headers: Record<string, string> = {
       "User-Agent": UA,
       Accept: "application/vnd.github+json",
     };
-    if (process.env.GITHUB_TOKEN) {
-      headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+    if (token) {
+      headers.Authorization = `Bearer ${token.trim()}`;
     }
     const res = await fetch(url, {
       headers,

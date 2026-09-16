@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import type { DeepPartial } from "ai";
 import type { User } from "@supabase/supabase-js";
@@ -40,15 +40,23 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
+  Compass,
   FileText,
   List,
   Loader2,
+  MessageSquare,
   Plus,
+  Rocket,
   Search,
   Settings,
+  Sparkles,
   Star,
   Trash2,
+  KeyRound,
 } from "lucide-react";
+import { OpportunityRadar } from "@/components/radar/opportunity-radar";
+import { CopilotChat } from "@/components/copilot/copilot-chat";
+import { IntegrationsHub } from "@/components/integrations/integrations-hub";
 import { CreditsBadge } from "@/components/credits/credits-badge";
 import { BuyCreditsModal } from "@/components/credits/buy-credits-modal";
 import { useCredits } from "@/components/credits/use-credits";
@@ -76,6 +84,7 @@ function newBlankThread(): ForgeThread {
 
 
 export function Workspace() {
+  const [activeAppTab, setActiveAppTab] = useState<"radar" | "copilot" | "studio" | "integrations">("radar");
   const [threads, setThreads] = useState<ForgeThread[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -429,11 +438,68 @@ export function Workspace() {
       <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Image src="/brand/mark/mark-white.png" alt="FounderHQ" width={56} height={56} className="shrink-0" />
-          <div className="hidden min-w-0 sm:block">
-            <p className="truncate text-sm font-semibold tracking-tight">FounderHQ</p>
-            <p className="truncate text-xs text-muted-foreground">Do your homework before you ship.</p>
+          <div className="hidden min-w-0 lg:block">
+            <p className="truncate text-sm font-semibold tracking-tight">SaaS Opportunity Radar</p>
+            <p className="truncate text-xs text-muted-foreground">FounderHQ Intelligence</p>
           </div>
         </div>
+
+        {/* Global Navigation Switcher */}
+        <div className="flex items-center rounded-lg border border-border/70 bg-card/60 p-1">
+          <button
+            type="button"
+            onClick={() => setActiveAppTab("radar")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "radar"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Compass className="size-3.5" />
+            <span className="hidden sm:inline">Opportunity Radar</span>
+            <span className="sm:hidden">Radar</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveAppTab("copilot")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "copilot"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <MessageSquare className="size-3.5" />
+            <span className="hidden sm:inline">AI Copilot</span>
+            <span className="sm:hidden">Copilot</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveAppTab("studio")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "studio"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Sparkles className="size-3.5" />
+            <span className="hidden sm:inline">IdeaForge Studio</span>
+            <span className="sm:hidden">Studio</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveAppTab("integrations")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "integrations"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <KeyRound className="size-3.5" />
+            <span className="hidden sm:inline">Integrations</span>
+            <span className="sm:hidden">Vault</span>
+          </button>
+        </div>
+
         <div className="flex items-center gap-2 sm:gap-3">
           <CreditsBadge
             credits={credits}
@@ -483,6 +549,7 @@ export function Workspace() {
           user={user}
           founderProfile={founderProfile}
           onProfileUpdate={setFounderProfile}
+          onOpenIntegrations={() => setActiveAppTab("integrations")}
         />
       )}
 
@@ -566,160 +633,192 @@ export function Workspace() {
       </Sheet>
 
       <div className="flex min-h-0 flex-1">
-        {/* Sidebar - desktop only, authenticated users only */}
-        {user && <aside
-          className={`hidden shrink-0 flex-col border-r border-border/70 bg-card transition-[width] duration-200 md:flex ${
-            sidebarOpen ? "w-[240px]" : "w-12"
-          } overflow-hidden`}
-        >
-          <div className={`flex shrink-0 border-b border-border/70 ${sidebarOpen ? "flex-row items-center gap-1 px-2 py-2" : "flex-col items-center gap-1 py-2"}`}>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-            >
-              {sidebarOpen ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={createThread}
-              aria-label="New session"
-            >
-              <Plus className="size-4" />
-            </Button>
-            {sidebarOpen && (
-              <p className="ml-1 truncate text-xs font-semibold text-muted-foreground">
-                Sessions
-              </p>
-            )}
+        {activeAppTab === "radar" ? (
+          <OpportunityRadar
+            onOpenIntegrations={() => setActiveAppTab("integrations")}
+            onSendToValidate={(topic) => {
+              const newThread = newBlankThread();
+              newThread.topic = topic;
+              newThread.title = topic.slice(0, 40);
+              setThreads((prev) => [newThread, ...prev]);
+              setActiveId(newThread.id);
+              setActiveAppTab("studio");
+            }}
+          />
+        ) : activeAppTab === "copilot" ? (
+          <div className="flex-1 overflow-hidden p-4">
+            <CopilotChat />
           </div>
-
-          {!sidebarOpen && (
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="flex flex-1 cursor-pointer items-center justify-center"
-              aria-label="Open sessions sidebar"
-            >
-              <span className="select-none text-xs font-semibold uppercase tracking-widest text-muted-foreground [writing-mode:vertical-rl] rotate-180">
-                Sessions
-              </span>
-            </button>
-          )}
-
-          {sidebarOpen && (
-            <>
-              <p className="px-3 pt-2 pb-1 text-xs text-muted-foreground leading-relaxed">
-                Your saved idea sessions. Each one stores the full report and chat history.
-              </p>
-              <div className="border-b border-border/70 p-2">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search..."
-                    className="h-8 border-border/70 bg-background/60 pl-8 text-xs"
-                  />
+        ) : activeAppTab === "integrations" ? (
+          <div className="flex-1 overflow-hidden">
+            <IntegrationsHub />
+          </div>
+        ) : (
+          <>
+            {/* Sidebar - desktop only, authenticated users only */}
+            {user && (
+              <aside
+                className={`hidden shrink-0 flex-col border-r border-border/70 bg-card transition-[width] duration-200 md:flex ${
+                  sidebarOpen ? "w-[240px]" : "w-12"
+                } overflow-hidden`}
+              >
+                <div
+                  className={`flex shrink-0 border-b border-border/70 ${
+                    sidebarOpen
+                      ? "flex-row items-center gap-1 px-2 py-2"
+                      : "flex-col items-center gap-1 py-2"
+                  }`}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                  >
+                    {sidebarOpen ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={createThread}
+                    aria-label="New session"
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                  {sidebarOpen && (
+                    <p className="ml-1 truncate text-xs font-semibold text-muted-foreground">
+                      Sessions
+                    </p>
+                  )}
                 </div>
-              </div>
-              <ScrollArea className="min-h-0 flex-1">
-                <div className="flex flex-col gap-0.5 p-2">
-                  {filtered.map((t) => (
-                    <div
-                      key={t.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => selectThread(t.id)}
-                      onKeyDown={(e) => e.key === "Enter" && selectThread(t.id)}
-                      className={`group flex cursor-pointer items-start gap-1 rounded-lg border px-2 py-2 text-left transition-all duration-150 hover:bg-muted/55 ${
-                        t.id === activeId
-                          ? "border-primary/40 bg-primary/10"
-                          : "border-transparent"
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1">
-                          <FileText className="size-3 shrink-0 text-muted-foreground" />
-                          <span className="truncate text-xs font-medium">{t.title}</span>
-                        </div>
-                        {t.topic ? (
-                          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                            {t.topic}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="flex shrink-0 flex-col">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          className={`opacity-30 hover:opacity-100 ${
-                            t.favorite ? "!opacity-100 text-amber-400" : ""
-                          }`}
-                          aria-label={t.favorite ? "Unfavorite" : "Favorite"}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(t.id);
-                          }}
-                        >
-                          <Star
-                            className="size-3"
-                            fill={t.favorite ? "currentColor" : "none"}
-                          />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          className="opacity-30 hover:opacity-100 hover:text-destructive"
-                          aria-label="Delete session"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteThread(t.id);
-                          }}
-                        >
-                          <Trash2 className="size-3" />
-                        </Button>
+
+                {!sidebarOpen && (
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(true)}
+                    className="flex flex-1 cursor-pointer items-center justify-center"
+                    aria-label="Open sessions sidebar"
+                  >
+                    <span className="select-none text-xs font-semibold uppercase tracking-widest text-muted-foreground [writing-mode:vertical-rl] rotate-180">
+                      Sessions
+                    </span>
+                  </button>
+                )}
+
+                {sidebarOpen && (
+                  <>
+                    <p className="px-3 pt-2 pb-1 text-xs text-muted-foreground leading-relaxed">
+                      Your saved idea sessions. Each one stores the full report and chat history.
+                    </p>
+                    <div className="border-b border-border/70 p-2">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                          placeholder="Search..."
+                          className="h-8 border-border/70 bg-background/60 pl-8 text-xs"
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </>
-          )}
-        </aside>}
+                    <ScrollArea className="min-h-0 flex-1">
+                      <div className="flex flex-col gap-0.5 p-2">
+                        {filtered.map((t) => (
+                          <div
+                            key={t.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => selectThread(t.id)}
+                            onKeyDown={(e) => e.key === "Enter" && selectThread(t.id)}
+                            className={`group flex cursor-pointer items-start gap-1 rounded-lg border px-2 py-2 text-left transition-all duration-150 hover:bg-muted/55 ${
+                              t.id === activeId
+                                ? "border-primary/40 bg-primary/10"
+                                : "border-transparent"
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1">
+                                <FileText className="size-3 shrink-0 text-muted-foreground" />
+                                <span className="truncate text-xs font-medium">{t.title}</span>
+                              </div>
+                              {t.topic ? (
+                                <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                                  {t.topic}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="flex shrink-0 flex-col">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                className={`opacity-30 hover:opacity-100 ${
+                                  t.favorite ? "!opacity-100 text-amber-400" : ""
+                                }`}
+                                aria-label={t.favorite ? "Unfavorite" : "Favorite"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(t.id);
+                                }}
+                              >
+                                <Star
+                                  className="size-3"
+                                  fill={t.favorite ? "currentColor" : "none"}
+                                />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                className="opacity-30 hover:opacity-100 hover:text-destructive"
+                                aria-label="Delete session"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteThread(t.id);
+                                }}
+                              >
+                                <Trash2 className="size-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </>
+                )}
+              </aside>
+            )}
 
-        {/* Main content */}
-        {active && messagesReady ? (
-          <IdeaStudio
-            key={active.id}
-            thread={active}
-            onPatch={(p) => patchThread(active.id, p)}
-            onLiveReport={stableLiveReport}
-            onAnalyzingChange={stableAnalyzing}
-            storage={provider}
-            initialMessages={activeMessages}
-            onNewThread={createThread}
-            founderProfile={founderProfile}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onBuyCredits={user ? () => setBuyCreditsOpen(true) : undefined}
-            onSignUp={() => setSignupGateOpen(true)}
-            onRefreshCredits={refreshCredits}
-            savedIdeas={savedIdeas}
-            onSaveIdea={handleSaveIdea}
-            onUnsaveIdea={handleUnsaveIdea}
-            isAnonymous={!user}
-            fingerprint={fingerprint}
-          />
-        ) : (
-          <div className="flex flex-1 items-center justify-center">
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
-          </div>
+            {/* Main content */}
+            {active && messagesReady ? (
+              <IdeaStudio
+                key={active.id}
+                thread={active}
+                onPatch={(p) => patchThread(active.id, p)}
+                onLiveReport={stableLiveReport}
+                onAnalyzingChange={stableAnalyzing}
+                storage={provider}
+                initialMessages={activeMessages}
+                onNewThread={createThread}
+                founderProfile={founderProfile}
+                onOpenSettings={() => setSettingsOpen(true)}
+                onBuyCredits={user ? () => setBuyCreditsOpen(true) : undefined}
+                onSignUp={() => setSignupGateOpen(true)}
+                onRefreshCredits={refreshCredits}
+                savedIdeas={savedIdeas}
+                onSaveIdea={handleSaveIdea}
+                onUnsaveIdea={handleUnsaveIdea}
+                isAnonymous={!user}
+                fingerprint={fingerprint}
+              />
+            ) : (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

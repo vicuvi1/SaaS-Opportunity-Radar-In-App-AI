@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -24,6 +24,8 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
+  KeyRound,
   Loader2,
   LogOut,
   Pencil,
@@ -72,12 +74,14 @@ export function SettingsPanel({
   user,
   founderProfile,
   onProfileUpdate,
+  onOpenIntegrations,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User;
   founderProfile: FounderProfile | null;
   onProfileUpdate: (profile: FounderProfile) => void;
+  onOpenIntegrations?: () => void;
 }) {
   const [profileExpanded, setProfileExpanded] = useState(false);
 
@@ -189,6 +193,39 @@ export function SettingsPanel({
                 <LogOut className="size-3.5" />
                 Sign out
               </Button>
+            </section>
+
+            <Separator className="opacity-50" />
+
+            {/* Integrations & Vault */}
+            <section className="space-y-3">
+              <SectionLabel>Integrations & Vault</SectionLabel>
+              <div className="rounded-xl border border-border/60 bg-card/50 p-4 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                    <KeyRound className="size-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">API Credentials & External Feeds</p>
+                    <p className="text-[11px] text-muted-foreground">Manage OpenRouter, Reddit, GitHub, Product Hunt & Telegram.</p>
+                  </div>
+                </div>
+                {onOpenIntegrations && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 text-xs border-border/80"
+                    onClick={() => {
+                      onOpenChange(false);
+                      onOpenIntegrations();
+                    }}
+                  >
+                    Open Integrations Hub
+                    <ExternalLink className="size-3" />
+                  </Button>
+                )}
+              </div>
             </section>
 
             <Separator className="opacity-50" />

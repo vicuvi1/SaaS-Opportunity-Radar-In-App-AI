@@ -1,5 +1,6 @@
 import type { RawDemandSnippet } from "./types";
 import { stripHtml } from "./strip-html";
+import { getIntegrationCredentials } from "@/lib/integrations/vault";
 
 const TOKEN_URL = "https://api.producthunt.com/v2/oauth/token";
 const GQL_URL   = "https://api.producthunt.com/v2/api/graphql";
@@ -7,9 +8,17 @@ const GQL_URL   = "https://api.producthunt.com/v2/api/graphql";
 // Module-level token cache — tokens last ~2h
 let tokenCache: { value: string; expiresAt: number } | null = null;
 
-async function getAccessToken(): Promise<string | null> {
-  const clientId     = process.env.PRODUCT_HUNT_CLIENT_ID;
-  const clientSecret = process.env.PRODUCT_HUNT_CLIENT_SECRET;
+async function getAccessToken(userId?: string): Promise<string | null> {
+  const creds = await getIntegrationCredentials<{
+    clientId?: string;
+    clientSecret?: string;
+    devToken?: string;
+  }>(userId, "producthunt").catch(() => null);
+
+  if (creds?.devToken) return creds.devToken;
+
+  const clientId = creds?.clientId || process.env.PRODUCT_HUNT_CLIENT_ID;
+  const clientSecret = creds?.clientSecret || process.env.PRODUCT_HUNT_CLIENT_SECRET;
   if (!clientId || !clientSecret) return null;
 
   if (tokenCache && Date.now() < tokenCache.expiresAt) return tokenCache.value;
@@ -188,8 +197,8 @@ async function fetchPostsForSlugs(token: string, slugs: string[]): Promise<PostN
   return posts;
 }
 
-export async function fetchProductHuntSignals(query: string): Promise<RawDemandSnippet[]> {
-  const token = await getAccessToken();
+export async function fetchProductHuntSignals(query: string, userId?: string): Promise<RawDemandSnippet[]> {
+  const token = await getAccessToken(userId);
   if (!token) {
     console.warn("[producthunt] skipped — credentials not set");
     return [];

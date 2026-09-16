@@ -1,22 +1,22 @@
-﻿import { fetchHnCommentSignals } from "./hackernews";
+import { fetchHnCommentSignals } from "./hackernews";
 import { fetchRedditSignals } from "./reddit";
 import { fetchGithubSignals } from "./github";
 import { fetchStackOverflowSignals } from "./stackoverflow";
 import { fetchProductHuntSignals } from "./producthunt";
 import type { RawDemandSnippet } from "./types";
 
-export async function gatherDemandSnippets(topic: string): Promise<{
+export async function gatherDemandSnippets(topic: string, userId?: string): Promise<{
   snippets: RawDemandSnippet[];
   errors: string[];
 }> {
   const errors: string[] = [];
 
   const [reddit, hn, github, stackoverflow, producthunt] = await Promise.all([
-    fetchRedditSignals(topic),
+    fetchRedditSignals(topic, userId),
     fetchHnCommentSignals(topic),
-    fetchGithubSignals(topic),
+    fetchGithubSignals(topic, userId),
     fetchStackOverflowSignals(topic),
-    fetchProductHuntSignals(topic),
+    fetchProductHuntSignals(topic, userId),
   ]);
 
   console.log(`[signals] reddit=${reddit.length} hn=${hn.length} github=${github.length} so=${stackoverflow.length} ph=${producthunt.length}`);

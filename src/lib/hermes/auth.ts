@@ -53,9 +53,17 @@ export async function verifyHermesOrUserAuth(req?: Request): Promise<{ authorize
     // Ignore auth check error
   }
 
-  // 3. In local development where HERMES_API_KEY is not yet defined in .env, permit requests with a dev warning
+  // 3. Local-first mode: requests originating from localhost/127.0.0.1 or without HERMES_API_KEY are permitted
   if (!configuredKey) {
     return { authorized: true };
+  }
+
+  // Check if request is from localhost / local single-user UI
+  if (req) {
+    const host = req.headers.get("host") || "";
+    if (host.includes("localhost") || host.includes("127.0.0.1")) {
+      return { authorized: true };
+    }
   }
 
   return { authorized: false, reason: "Invalid or missing HERMES_API_KEY" };

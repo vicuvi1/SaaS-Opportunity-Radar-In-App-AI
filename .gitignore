@@ -41,7 +41,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local vault and sensitive stores
+# local vault, sensitive stores, and sqlite database
 data/.vault_key
 data/integration_connections.json
 data/copilot_conversations.json
+data/*.db
+data/*.db-wal
+data/*.db-shm

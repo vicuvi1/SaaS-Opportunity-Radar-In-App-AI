@@ -22,6 +22,10 @@ interface TableViewProps {
   onStatusChange: (id: string, status: OpportunityStatus) => void;
   onDecisionChange: (id: string, decision: MyDecision) => void;
   onDeleteOpportunity?: (id: string, e?: React.MouseEvent) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onSelectAll?: () => void;
+  onDeepResearch?: (opp: Opportunity) => void;
 }
 
 const ALL_STATUSES: OpportunityStatus[] = [
@@ -54,6 +58,10 @@ export function TableView({
   onStatusChange,
   onDecisionChange,
   onDeleteOpportunity,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
+  onDeepResearch,
 }: TableViewProps) {
   if (opportunities.length === 0) {
     return (
@@ -64,11 +72,25 @@ export function TableView({
     );
   }
 
+  const allSelected =
+    opportunities.length > 0 && selectedIds && selectedIds.size === opportunities.length;
+
   return (
     <div className="w-full overflow-x-auto rounded-2xl border border-border/70 bg-card">
       <table className="w-full text-left text-xs border-collapse">
         <thead>
           <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground font-semibold">
+            <th className="py-3 px-3 w-10 text-center">
+              {onSelectAll && (
+                <input
+                  type="checkbox"
+                  checked={!!allSelected}
+                  onChange={onSelectAll}
+                  className="size-3.5 rounded border-border accent-primary cursor-pointer"
+                  title="Select All"
+                />
+              )}
+            </th>
             <th className="py-3 px-3 w-10 text-center">★</th>
             <th className="py-3 px-4 min-w-[240px]">Opportunity</th>
             <th className="py-3 px-3 min-w-[130px]">Status</th>
@@ -77,7 +99,7 @@ export function TableView({
             <th className="py-3 px-3 min-w-[130px]">My Decision</th>
             <th className="py-3 px-4 min-w-[200px]">Next Action</th>
             <th className="py-3 px-3 min-w-[100px]">Industry</th>
-            <th className="py-3 px-3 w-16 text-right">Actions</th>
+            <th className="py-3 px-3 w-24 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/40">
@@ -95,6 +117,18 @@ export function TableView({
                 onClick={() => onSelectOpportunity(opp)}
                 className="group hover:bg-muted/30 transition-colors cursor-pointer"
               >
+                {/* Checkbox */}
+                <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  {onToggleSelect && (
+                    <input
+                      type="checkbox"
+                      checked={!!selectedIds?.has(opp.id)}
+                      onChange={() => onToggleSelect(opp.id)}
+                      className="size-3.5 rounded border-border accent-primary cursor-pointer"
+                    />
+                  )}
+                </td>
+
                 {/* Star & Bookmark */}
                 <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center gap-1">
@@ -206,6 +240,16 @@ export function TableView({
                 {/* Actions */}
                 <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
+                    {onDeepResearch && (
+                      <button
+                        type="button"
+                        title="13-Dimension Deep Research"
+                        onClick={() => onDeepResearch(opp)}
+                        className="p-1.5 rounded hover:bg-violet-500/10 text-violet-400 hover:text-violet-300 transition-colors"
+                      >
+                        <Sparkles className="size-3.5" />
+                      </button>
+                    )}
                     <button
                       type="button"
                       title={opp.saved ? "Saved" : "Save"}

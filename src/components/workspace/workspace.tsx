@@ -501,57 +501,33 @@ export function Workspace() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <CreditsBadge
-            credits={credits}
-            loading={creditsLoading}
-            onClick={() => user ? setBuyCreditsOpen(true) : setSignupGateOpen(true)}
-          />
-          {user && (
-            <BuyCreditsModal
-              open={buyCreditsOpen}
-              onOpenChange={setBuyCreditsOpen}
-              currentCredits={credits}
-              onPurchased={refreshCredits}
-            />
-          )}
-          <SignupGateModal open={signupGateOpen && !user} onOpenChange={setSignupGateOpen} />
-          {user && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5 border-border/70 bg-background/70 md:hidden"
-              onClick={() => setMobileSidebarOpen(true)}
-            >
-              <List className="size-3.5" />
-              <span className="hidden xs:inline">Sessions</span>
-            </Button>
-          )}
-          {user && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setSettingsOpen(true)}
-              aria-label="Settings"
-            >
-              <Settings className="size-4 text-muted-foreground" />
-            </Button>
-          )}
-          <SignInDialog user={user} />
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Local-First (SQLite)
+          </span>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+          >
+            <Settings className="size-4 text-muted-foreground hover:text-foreground" />
+          </Button>
+
+          {user && <SignInDialog user={user} />}
         </div>
       </header>
 
-      {user && (
-        <SettingsPanel
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          user={user}
-          founderProfile={founderProfile}
-          onProfileUpdate={setFounderProfile}
-          onOpenIntegrations={() => setActiveAppTab("integrations")}
-        />
-      )}
+      <SettingsPanel
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        user={user || ({ email: "local@saas-radar.internal" } as any)}
+        founderProfile={founderProfile}
+        onProfileUpdate={setFounderProfile}
+        onOpenIntegrations={() => setActiveAppTab("integrations")}
+      />
 
       {/* Mobile sessions sheet */}
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>

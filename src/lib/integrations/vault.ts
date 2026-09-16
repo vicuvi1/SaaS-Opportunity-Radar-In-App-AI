@@ -1,5 +1,6 @@
-import fs from "fs";
-import path from "path";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { integrationsTable } from "@/lib/db/schema";
 import { encryptSecret, decryptSecret, maskSecret } from "./crypto";
 import type {
   ConnectionStatus,
@@ -7,34 +8,37 @@ import type {
   IntegrationConnectionRecord,
   IntegrationProviderId,
 } from "./types";
-import { createServerClient } from "@/lib/supabase/server";
 
-const DATA_FILE_PATH = path.join(process.cwd(), "data", "integration_connections.json");
-
-function ensureDataFile(): void {
-  const dir = path.dirname(DATA_FILE_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  if (!fs.existsSync(DATA_FILE_PATH)) {
-    fs.writeFileSync(DATA_FILE_PATH, JSON.stringify([]), "utf-8");
-  }
-}
-
-function readLocalConnections(): IntegrationConnectionRecord[] {
-  ensureDataFile();
+function safeParseJson<T>(val: string | null | undefined, fallback: T): T {
+  if (!val) return fallback;
   try {
-    const raw = fs.readFileSync(DATA_FILE_PATH, "utf-8");
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error("[vault] Failed reading local connections JSON:", err);
-    return [];
+    return JSON.parse(val) as T;
+  } catch {
+    return fallback;
   }
 }
 
-function writeLocalConnections(list: IntegrationConnectionRecord[]): void {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(list, null, 2), "utf-8");
+function rowToRecord(
+  row: typeof integrationsTable.$inferSelect,
+  userId: string = "default_local_user",
+): IntegrationConnectionRecord {
+  return {
+    id: row.id,
+    userId,
+    provider: row.provider as IntegrationProviderId,
+    status: row.status as ConnectionStatus,
+    category: row.category as IntegrationCategory,
+    accountName: row.accountName,
+    accountMetadata: safeParseJson<Record<string, unknown> | null>(
+      row.accountMetadata,
+      null,
+    ),
+    encryptedCredentials: row.encryptedCredentials,
+    lastTestedAt: row.lastTestedAt,
+    errorMessage: row.errorMessage,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 export async function getIntegrationConnection(
@@ -42,86 +46,32 @@ export async function getIntegrationConnection(
   provider: IntegrationProviderId,
 ): Promise<IntegrationConnectionRecord | null> {
   const targetUser = userId || "default_local_user";
-
-  // Try Supabase first if available
   try {
-    const supabase = await createServerClient();
-    if (supabase) {
-      const { data, error } = await supabase
-        .from("integration_connections")
-        .select("*")
-        .eq("user_id", targetUser)
-        .eq("provider", provider)
-        .maybeSingle();
+    const row = db
+      .select()
+      .from(integrationsTable)
+      .where(eq(integrationsTable.provider, provider))
+      .get();
 
-      if (!error && data) {
-        return {
-          id: data.id,
-          userId: data.user_id,
-          provider: data.provider,
-          status: data.status,
-          category: data.category,
-          accountName: data.account_name,
-          accountMetadata: data.account_metadata,
-          encryptedCredentials: data.encrypted_credentials,
-          lastTestedAt: data.last_tested_at,
-          errorMessage: data.error_message,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        };
-      }
-    }
-  } catch {
-    // Supabase unavailable or table doesn't exist yet, fall through to local
+    if (!row) return null;
+    return rowToRecord(row, targetUser);
+  } catch (err) {
+    console.error(`[vault] Error fetching connection for ${provider}:`, err);
+    return null;
   }
-
-  // Local JSON fallback
-  const local = readLocalConnections();
-  return (
-    local.find(
-      (c) => (c.userId === targetUser || c.userId === "default_local_user") && c.provider === provider,
-    ) || null
-  );
 }
 
 export async function listIntegrationConnections(
   userId?: string,
 ): Promise<IntegrationConnectionRecord[]> {
   const targetUser = userId || "default_local_user";
-
   try {
-    const supabase = await createServerClient();
-    if (supabase) {
-      const { data, error } = await supabase
-        .from("integration_connections")
-        .select("*")
-        .eq("user_id", targetUser);
-
-      if (!error && data && data.length > 0) {
-        return data.map((d) => ({
-          id: d.id,
-          userId: d.user_id,
-          provider: d.provider,
-          status: d.status,
-          category: d.category,
-          accountName: d.account_name,
-          accountMetadata: d.account_metadata,
-          encryptedCredentials: d.encrypted_credentials,
-          lastTestedAt: d.last_tested_at,
-          errorMessage: d.error_message,
-          createdAt: d.created_at,
-          updatedAt: d.updated_at,
-        }));
-      }
-    }
-  } catch {
-    // Fall back to local file
+    const rows = db.select().from(integrationsTable).all();
+    return rows.map((r) => rowToRecord(r, targetUser));
+  } catch (err) {
+    console.error("[vault] Error listing connections:", err);
+    return [];
   }
-
-  const local = readLocalConnections();
-  return local.filter(
-    (c) => c.userId === targetUser || c.userId === "default_local_user",
-  );
 }
 
 export async function saveIntegrationConnection({
@@ -161,95 +111,75 @@ export async function saveIntegrationConnection({
 
   const existing = await getIntegrationConnection(targetUser, provider);
   const id = existing?.id || `conn_${provider}_${Date.now()}`;
-  const lastTested = markTested ? now : existing?.lastTestedAt ?? null;
+  const lastTested = markTested ? now : (existing?.lastTestedAt ?? null);
 
-  const record: IntegrationConnectionRecord = {
-    id,
-    userId: targetUser,
-    provider,
-    status,
-    category,
-    accountName: accountName !== undefined ? accountName : (existing?.accountName ?? null),
-    accountMetadata:
-      accountMetadata !== undefined
-        ? accountMetadata
-        : (existing?.accountMetadata ?? null),
-    encryptedCredentials: encryptedPayload,
-    lastTestedAt: lastTested,
-    errorMessage: errorMessage !== undefined ? errorMessage : null,
-    createdAt: existing?.createdAt || now,
-    updatedAt: now,
-  };
+  const metaStr =
+    accountMetadata !== undefined
+      ? JSON.stringify(accountMetadata)
+      : existing?.accountMetadata
+        ? JSON.stringify(existing.accountMetadata)
+        : "{}";
 
-  // Attempt Supabase upsert
-  let savedToSupabase = false;
-  try {
-    const supabase = await createServerClient();
-    if (supabase) {
-      const { error } = await supabase.from("integration_connections").upsert({
-        id: record.id,
-        user_id: record.userId,
-        provider: record.provider,
-        status: record.status,
-        category: record.category,
-        account_name: record.accountName,
-        account_metadata: record.accountMetadata,
-        encrypted_credentials: record.encryptedCredentials,
-        last_tested_at: record.lastTestedAt,
-        error_message: record.errorMessage,
-        updated_at: record.updatedAt,
-      });
-      if (!error) savedToSupabase = true;
-    }
-  } catch {
-    // Fall back to local
-  }
+  const accName =
+    accountName !== undefined ? accountName : (existing?.accountName ?? null);
 
-  // Always mirror/persist to local JSON as well
-  const local = readLocalConnections();
-  const index = local.findIndex(
-    (c) => c.userId === targetUser && c.provider === provider,
-  );
-  if (index >= 0) {
-    local[index] = record;
+  const errMsg =
+    errorMessage !== undefined ? errorMessage : null;
+
+  if (existing) {
+    db.update(integrationsTable)
+      .set({
+        status,
+        category,
+        accountName: accName,
+        accountMetadata: metaStr,
+        encryptedCredentials: encryptedPayload,
+        lastTestedAt: lastTested,
+        errorMessage: errMsg,
+        updatedAt: now,
+      })
+      .where(eq(integrationsTable.provider, provider))
+      .run();
   } else {
-    local.push(record);
+    db.insert(integrationsTable)
+      .values({
+        id,
+        provider,
+        status,
+        category,
+        accountName: accName,
+        accountMetadata: metaStr,
+        encryptedCredentials: encryptedPayload,
+        lastTestedAt: lastTested,
+        errorMessage: errMsg,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run();
   }
-  writeLocalConnections(local);
 
-  return record;
+  return (await getIntegrationConnection(targetUser, provider))!;
 }
 
 export async function deleteIntegrationConnection(
   userId: string | undefined,
   provider: IntegrationProviderId,
 ): Promise<boolean> {
-  const targetUser = userId || "default_local_user";
-
   try {
-    const supabase = await createServerClient();
-    if (supabase) {
-      await supabase
-        .from("integration_connections")
-        .delete()
-        .eq("user_id", targetUser)
-        .eq("provider", provider);
-    }
-  } catch {
-    // Ignore error
+    const res = db
+      .delete(integrationsTable)
+      .where(eq(integrationsTable.provider, provider))
+      .run();
+    return res.changes > 0;
+  } catch (err) {
+    console.error(`[vault] Error deleting connection for ${provider}:`, err);
+    return false;
   }
-
-  const local = readLocalConnections();
-  const filtered = local.filter(
-    (c) => !(c.userId === targetUser && c.provider === provider),
-  );
-  writeLocalConnections(filtered);
-  return true;
 }
 
 /**
  * Primary decrypted credentials accessor.
- * Decrypts vault record if found.
+ * Decrypts vault record if found in SQLite.
  * If not found in vault, checks environment variables so existing configuration is never broken.
  */
 export async function getIntegrationCredentials<T = Record<string, any>>(

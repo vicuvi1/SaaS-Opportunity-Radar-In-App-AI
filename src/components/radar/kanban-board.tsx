@@ -16,6 +16,9 @@ interface KanbanBoardProps {
   onStatusChange: (id: string, status: OpportunityStatus, e?: React.MouseEvent) => void;
   onDeleteOpportunity?: (id: string, e?: React.MouseEvent) => void;
   onCreateInStatus?: (status: OpportunityStatus) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string, e: React.MouseEvent) => void;
+  onDeepResearch?: (opp: Opportunity, e: React.MouseEvent) => void;
 }
 
 const KANBAN_COLUMNS: Array<{
@@ -42,6 +45,9 @@ export function KanbanBoard({
   onStatusChange,
   onDeleteOpportunity,
   onCreateInStatus,
+  selectedIds,
+  onToggleSelect,
+  onDeepResearch,
 }: KanbanBoardProps) {
   const [dragOverCol, setDragOverCol] = useState<OpportunityStatus | null>(null);
 
@@ -131,6 +137,9 @@ export function KanbanBoard({
                     onToggleSaved={onToggleSaved}
                     onStatusChange={onStatusChange}
                     onDelete={onDeleteOpportunity}
+                    isSelected={selectedIds?.has(opp.id)}
+                    onToggleSelect={onToggleSelect}
+                    onDeepResearch={onDeepResearch}
                   />
                 ))
               )}

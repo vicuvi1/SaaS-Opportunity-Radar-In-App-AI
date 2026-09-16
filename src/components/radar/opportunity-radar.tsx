@@ -11,6 +11,11 @@ import { KanbanBoard } from "./kanban-board";
 import { TableView } from "./table-view";
 import { OpportunityDetailDialog } from "./opportunity-detail-dialog";
 import { CreateOpportunityDialog } from "./create-opportunity-dialog";
+import { NewDiscoveriesInbox } from "./new-discoveries-inbox";
+import { DeepResearchDialog } from "./deep-research-dialog";
+import { TelegramDispatchModal } from "./telegram-dispatch-modal";
+import { ResearchConfigModal } from "./research-config-modal";
+import { BackupModal } from "./backup-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +49,11 @@ import {
   MessageSquare,
   Loader2,
   SlidersHorizontal,
+  Inbox,
+  Send,
+  Database,
+  CheckSquare,
+  X,
 } from "lucide-react";
 
 interface OpportunityRadarProps {
@@ -76,6 +86,17 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
     total: 6,
     connected: 0,
   });
+
+  // Multi-selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Modals state
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [deepResearchOpen, setDeepResearchOpen] = useState(false);
+  const [deepResearchTarget, setDeepResearchTarget] = useState<Opportunity | null>(null);
+  const [telegramDispatchOpen, setTelegramDispatchOpen] = useState(false);
+  const [researchConfigOpen, setResearchConfigOpen] = useState(false);
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
 
   // Filter & Search states
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
@@ -155,6 +176,7 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
     const building = opportunities.filter((o) => o.status === "BUILDING").length;
     const mvp = opportunities.filter((o) => o.status === "MVP").length;
     const newCount = opportunities.filter((o) => o.status === "NEW").length;
+    const newDiscoveriesCount = opportunities.filter((o) => o.isNewDiscovery).length;
     return {
       total,
       highPotential,
@@ -165,12 +187,16 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
       building,
       mvp,
       newCount,
+      newDiscoveriesCount,
     };
   }, [opportunities]);
 
   // Filtered & Sorted opportunities
   const filteredOpportunities = useMemo(() => {
     return opportunities.filter((opp) => {
+      // Staged new discoveries are held in Daily Inbox
+      if (opp.isNewDiscovery) return false;
+
       // Tab view constraints
       if (viewMode === "saved" && !opp.saved) return false;
       if (viewMode === "favorites" && !opp.favorite) return false;
@@ -361,6 +387,110 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
     }
   }
 
+  // Selection handlers
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === filteredOpportunities.length) {
+        return new Set();
+      }
+      return new Set(filteredOpportunities.map((o) => o.id));
+    });
+  }, [filteredOpportunities]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBulkDecision = useCallback(
+    async (decision: MyDecision) => {
+      const ids = Array.from(selectedIds);
+      if (ids.length === 0) return;
+
+      setOpportunities((prev) =>
+        prev.map((o) => (ids.includes(o.id) ? { ...o, myDecision: decision } : o)),
+      );
+
+      for (const id of ids) {
+        await fetch(`/api/opportunities/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ myDecision: decision }),
+        }).catch(console.error);
+      }
+      handleClearSelection();
+    },
+    [selectedIds, handleClearSelection],
+  );
+
+  // Deep research trigger
+  const handleDeepResearch = useCallback((opp: Opportunity) => {
+    setDeepResearchTarget(opp);
+    setDeepResearchOpen(true);
+  }, []);
+
+  // Inbox Keep / Reject handlers
+  const handleKeepDiscovery = useCallback(
+    async (id: string) => {
+      setOpportunities((prev) =>
+        prev.map((o) =>
+          o.id === id
+            ? { ...o, isNewDiscovery: false, status: o.status === "NEW" ? "REVIEW" : o.status }
+            : o,
+        ),
+      );
+      try {
+        await fetch(`/api/opportunities/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isNewDiscovery: false, status: "REVIEW" }),
+        });
+      } catch (err) {
+        console.error("Failed to keep discovery:", err);
+        fetchOpportunities();
+      }
+    },
+    [fetchOpportunities],
+  );
+
+  const handleRejectDiscovery = useCallback(
+    async (id: string) => {
+      setOpportunities((prev) =>
+        prev.map((o) =>
+          o.id === id
+            ? { ...o, isNewDiscovery: false, status: "REJECTED", myDecision: "DO_NOT_BUILD" }
+            : o,
+        ),
+      );
+      try {
+        await fetch(`/api/opportunities/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            isNewDiscovery: false,
+            status: "REJECTED",
+            myDecision: "DO_NOT_BUILD",
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to reject discovery:", err);
+        fetchOpportunities();
+      }
+    },
+    [fetchOpportunities],
+  );
+
   // Bulk Export to Obsidian
   async function handleExportAllObsidian() {
     try {
@@ -454,6 +584,21 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
               <strong className="font-mono">{stats.myIdeas}</strong>
             </button>
 
+            {/* Inbox holding queue button */}
+            <button
+              type="button"
+              onClick={() => setInboxOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-emerald-400 hover:bg-emerald-500/20 transition-colors relative"
+              title="Daily Research Inbox"
+            >
+              <Inbox className="size-3" />
+              <span>Inbox:</span>
+              <strong className="font-mono">{stats.newDiscoveriesCount} new</strong>
+              {stats.newDiscoveriesCount > 0 && (
+                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+              )}
+            </button>
+
             {/* Integrations Hub Indicator Pill */}
             <button
               type="button"
@@ -475,6 +620,30 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
+            {/* Discovery & Scheduler Config */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5 border-violet-500/40 text-violet-400 hover:bg-violet-500/10"
+              onClick={() => setResearchConfigOpen(true)}
+              title="Configure discovery parameters and recurring daily schedule"
+            >
+              <Clock className="size-3.5" />
+              Discovery & Schedule
+            </Button>
+
+            {/* Local Backup & Obsidian Sync */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => setBackupModalOpen(true)}
+              title="Download SQLite DB or sync to Obsidian"
+            >
+              <Database className="size-3.5 text-emerald-400" />
+              Backup & Sync
+            </Button>
+
             {/* Run Research Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -489,7 +658,7 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
                 ) : (
                   <>
                     <Search className="size-3.5 text-primary" />
-                    Run Research Now
+                    Run Research
                   </>
                 )}
               </DropdownMenuTrigger>
@@ -521,16 +690,6 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs gap-1.5"
-              onClick={handleExportAllObsidian}
-              title="Download all opportunities as JSON bundle for Obsidian"
-            >
-              <Download className="size-3.5" />
-              Obsidian Sync
-            </Button>
             <Button
               size="sm"
               className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground font-semibold shadow-sm"
@@ -692,6 +851,61 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
         </div>
       </div>
 
+      {/* ── SELECTION ACTION BAR ────────────────────────────────────── */}
+      {selectedIds.size > 0 && (
+        <div className="bg-primary/10 border-b border-primary/30 px-6 py-2 flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-primary">Selected:</span>
+            <Badge variant="secondary" className="font-mono">
+              {selectedIds.size} / {filteredOpportunities.length}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={handleClearSelection}
+            >
+              Clear
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5 border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
+              onClick={() => setTelegramDispatchOpen(true)}
+            >
+              <Send className="size-3" />
+              Dispatch to Telegram ({selectedIds.size})
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md border border-border bg-background px-2.5 h-7 text-xs font-medium hover:bg-muted gap-1 cursor-pointer">
+                Mark Decision...
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="text-xs">
+                <DropdownMenuItem onClick={() => handleBulkDecision("BUILD")}>
+                  Mark BUILD
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkDecision("VALIDATING")}>
+                  Mark VALIDATING
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkDecision("INTERESTED")}>
+                  Mark INTERESTED
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkDecision("LATER")}>
+                  Mark LATER
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkDecision("DO_NOT_BUILD")}>
+                  Mark DO NOT BUILD
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      )}
+
       {/* ── MAIN WORKSPACE CONTENT ─────────────────────────────────── */}
       <div className="flex-1 overflow-hidden p-4">
         {viewMode === "copilot" ? (
@@ -715,6 +929,10 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
             onStatusChange={handleStatusChange}
             onDecisionChange={handleDecisionChange}
             onDeleteOpportunity={handleDeleteOpportunity}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onSelectAll={handleSelectAll}
+            onDeepResearch={handleDeepResearch}
           />
         ) : (
           <KanbanBoard
@@ -728,6 +946,9 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
               setCreateDefaultStatus(status);
               setCreateOpen(true);
             }}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onDeepResearch={handleDeepResearch}
           />
         )}
       </div>
@@ -756,6 +977,48 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
         mode={preflightMode}
         onProceed={handleRunResearch}
         onOpenIntegrations={() => onOpenIntegrations?.()}
+      />
+
+      <NewDiscoveriesInbox
+        open={inboxOpen}
+        onOpenChange={setInboxOpen}
+        opportunities={opportunities}
+        onKeep={handleKeepDiscovery}
+        onReject={handleRejectDiscovery}
+        onDeepResearch={handleDeepResearch}
+        onToggleFavorite={handleToggleFavorite}
+        onToggleSaved={handleToggleSaved}
+      />
+
+      <DeepResearchDialog
+        opportunity={deepResearchTarget}
+        open={deepResearchOpen}
+        onOpenChange={(open) => {
+          setDeepResearchOpen(open);
+          if (!open) setDeepResearchTarget(null);
+        }}
+        onOpportunityUpdated={(updated) => {
+          setOpportunities((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+          setSelectedOpp(updated);
+        }}
+      />
+
+      <TelegramDispatchModal
+        open={telegramDispatchOpen}
+        onOpenChange={setTelegramDispatchOpen}
+        selectedOpportunities={opportunities.filter((o) => selectedIds.has(o.id))}
+        onOpenIntegrations={onOpenIntegrations}
+      />
+
+      <ResearchConfigModal
+        open={researchConfigOpen}
+        onOpenChange={setResearchConfigOpen}
+        onRunCompleted={fetchOpportunities}
+      />
+
+      <BackupModal
+        open={backupModalOpen}
+        onOpenChange={setBackupModalOpen}
       />
     </div>
   );

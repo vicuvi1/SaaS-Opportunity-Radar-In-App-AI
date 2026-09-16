@@ -35,6 +35,9 @@ interface OpportunityCardProps {
   onStatusChange: (id: string, status: OpportunityStatus, e?: React.MouseEvent) => void;
   onDelete?: (id: string, e?: React.MouseEvent) => void;
   isDragging?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string, e: React.MouseEvent) => void;
+  onDeepResearch?: (opp: Opportunity, e: React.MouseEvent) => void;
 }
 
 const STATUS_ORDER: OpportunityStatus[] = [
@@ -56,6 +59,9 @@ export function OpportunityCard({
   onStatusChange,
   onDelete,
   isDragging,
+  isSelected,
+  onToggleSelect,
+  onDeepResearch,
 }: OpportunityCardProps) {
   const currentIdx = STATUS_ORDER.indexOf(opportunity.status);
   const prevStatus = currentIdx > 0 ? STATUS_ORDER[currentIdx - 1] : null;
@@ -122,6 +128,19 @@ export function OpportunityCard({
       {/* Top row: Badges & Actions */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
+          {/* Selection Checkbox */}
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={!!isSelected}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                onToggleSelect(opportunity.id, e as any);
+              }}
+              className="size-3.5 rounded border-border accent-primary cursor-pointer mr-0.5"
+            />
+          )}
+
           {/* AI Priority */}
           <span
             className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] tracking-tight ${priorityConfig.badge}`}
@@ -146,6 +165,19 @@ export function OpportunityCard({
 
         {/* Favorite & Bookmark Buttons */}
         <div className="flex items-center gap-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
+          {onDeepResearch && (
+            <button
+              type="button"
+              title="13-Dimension Deep Research"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeepResearch(opportunity, e);
+              }}
+              className="p-1 rounded-md hover:bg-muted/70 text-violet-400 hover:text-violet-300 transition-colors"
+            >
+              <Sparkles className="size-3.5" />
+            </button>
+          )}
           <button
             type="button"
             title={opportunity.favorite ? "Favorited" : "Mark as Favorite"}
@@ -181,7 +213,19 @@ export function OpportunityCard({
             >
               <MoreVertical className="size-3.5" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 text-xs">
+            <DropdownMenuContent align="end" className="w-48 text-xs">
+              {onDeepResearch && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeepResearch(opportunity, e);
+                  }}
+                  className="text-violet-400 focus:text-violet-300 font-medium"
+                >
+                  <Sparkles className="size-3.5 mr-1.5 text-violet-400" />
+                  13D Deep Research
+                </DropdownMenuItem>
+              )}
               {nextStatus && (
                 <DropdownMenuItem
                   onClick={(e) => {

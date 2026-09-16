@@ -135,6 +135,8 @@ export type Opportunity = {
 
   // Meta & State
   status: OpportunityStatus;
+  isNewDiscovery?: boolean; // true = held in Daily New Discoveries Inbox
+  researchRunId?: string;
   isUserGenerated: boolean; // true = MY IDEA, false = AI DISCOVERED
   createdBy: "AI" | "USER";
   source: "Hermes" | "IdeaForge" | "Manual" | string;

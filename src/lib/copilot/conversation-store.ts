@@ -1,7 +1,6 @@
-import fs from "fs";
-import path from "path";
-import { isSupabaseConfigured } from "@/lib/supabase/is-configured";
-import { createClient } from "@/lib/supabase/server";
+import { eq, desc, asc } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { aiConversationsTable, aiMessagesTable } from "@/lib/db/schema";
 
 export interface CopilotMessage {
   id: string;
@@ -28,66 +27,179 @@ export interface CopilotConversation {
   updatedAt: string;
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const CONV_FILE = path.join(DATA_DIR, "copilot_conversations.json");
-
-function ensureConvFile(): CopilotConversation[] {
+function safeParseJson<T>(val: string | null | undefined, fallback: T): T {
+  if (!val) return fallback;
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(CONV_FILE)) {
-      fs.writeFileSync(CONV_FILE, JSON.stringify([], null, 2), "utf-8");
-      return [];
-    }
-    const raw = fs.readFileSync(CONV_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    console.error("[conversation-store] Error reading conversations:", err);
-    return [];
-  }
-}
-
-function writeConvFile(items: CopilotConversation[]) {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(CONV_FILE, JSON.stringify(items, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[conversation-store] Error writing conversations:", err);
+    return JSON.parse(val) as T;
+  } catch {
+    return fallback;
   }
 }
 
 export const conversationStore = {
   async list(opportunityId?: string): Promise<CopilotConversation[]> {
-    const all = ensureConvFile();
-    if (opportunityId) {
-      return all
-        .filter((c) => c.opportunityId === opportunityId)
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    try {
+      let convRows = db
+        .select()
+        .from(aiConversationsTable)
+        .orderBy(desc(aiConversationsTable.updatedAt))
+        .all();
+
+      if (opportunityId) {
+        convRows = convRows.filter((c) => c.targetOpportunityId === opportunityId);
+      }
+
+      // Fetch messages for all conversations
+      const allMessages = db
+        .select()
+        .from(aiMessagesTable)
+        .orderBy(asc(aiMessagesTable.createdAt))
+        .all();
+
+      const messagesByConv = new Map<string, CopilotMessage[]>();
+      for (const m of allMessages) {
+        const list = messagesByConv.get(m.conversationId) || [];
+        const parsedContext = safeParseJson<any>(m.contextData, {});
+        list.push({
+          id: m.id,
+          role: m.role as "user" | "assistant" | "system",
+          content: m.content,
+          createdAt: m.createdAt,
+          toolInvocations: parsedContext.toolInvocations,
+        });
+        messagesByConv.set(m.conversationId, list);
+      }
+
+      return convRows.map((c) => ({
+        id: c.id,
+        title: c.title,
+        opportunityId: c.targetOpportunityId || undefined,
+        modelUsed: c.modelUsed || "auto",
+        contextType: c.scope || "GLOBAL",
+        messages: messagesByConv.get(c.id) || [],
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+      }));
+    } catch (err) {
+      console.error("[conversation-store] Error listing conversations:", err);
+      return [];
     }
-    return all.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   },
 
   async get(id: string): Promise<CopilotConversation | null> {
-    const all = ensureConvFile();
-    return all.find((c) => c.id === id) ?? null;
+    try {
+      const conv = db
+        .select()
+        .from(aiConversationsTable)
+        .where(eq(aiConversationsTable.id, id))
+        .get();
+
+      if (!conv) return null;
+
+      const messages = db
+        .select()
+        .from(aiMessagesTable)
+        .where(eq(aiMessagesTable.conversationId, id))
+        .orderBy(asc(aiMessagesTable.createdAt))
+        .all()
+        .map((m) => {
+          const parsed = safeParseJson<any>(m.contextData, {});
+          return {
+            id: m.id,
+            role: m.role as "user" | "assistant" | "system",
+            content: m.content,
+            createdAt: m.createdAt,
+            toolInvocations: parsed.toolInvocations,
+          };
+        });
+
+      return {
+        id: conv.id,
+        title: conv.title,
+        opportunityId: conv.targetOpportunityId || undefined,
+        modelUsed: conv.modelUsed || "auto",
+        contextType: conv.scope || "GLOBAL",
+        messages,
+        createdAt: conv.createdAt,
+        updatedAt: conv.updatedAt,
+      };
+    } catch (err) {
+      console.error(`[conversation-store] Error getting conversation ${id}:`, err);
+      return null;
+    }
   },
 
   async save(conversation: CopilotConversation): Promise<CopilotConversation> {
-    const all = ensureConvFile();
-    const idx = all.findIndex((c) => c.id === conversation.id);
-    const updated = { ...conversation, updatedAt: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const existing = db
+      .select()
+      .from(aiConversationsTable)
+      .where(eq(aiConversationsTable.id, conversation.id))
+      .get();
 
-    if (idx >= 0) {
-      all[idx] = updated;
+    if (existing) {
+      db.update(aiConversationsTable)
+        .set({
+          title: conversation.title,
+          targetOpportunityId: conversation.opportunityId || null,
+          modelUsed: conversation.modelUsed,
+          scope: conversation.contextType,
+          updatedAt: now,
+        })
+        .where(eq(aiConversationsTable.id, conversation.id))
+        .run();
     } else {
-      all.unshift(updated);
+      db.insert(aiConversationsTable)
+        .values({
+          id: conversation.id,
+          title: conversation.title,
+          targetOpportunityId: conversation.opportunityId || null,
+          modelUsed: conversation.modelUsed,
+          scope: conversation.contextType,
+          createdAt: conversation.createdAt || now,
+          updatedAt: now,
+        })
+        .run();
     }
-    writeConvFile(all);
-    return updated;
+
+    // Upsert messages
+    if (conversation.messages && conversation.messages.length > 0) {
+      for (const msg of conversation.messages) {
+        const msgExisting = db
+          .select()
+          .from(aiMessagesTable)
+          .where(eq(aiMessagesTable.id, msg.id))
+          .get();
+
+        const contextData = JSON.stringify({
+          toolInvocations: msg.toolInvocations || [],
+        });
+
+        if (!msgExisting) {
+          db.insert(aiMessagesTable)
+            .values({
+              id: msg.id,
+              conversationId: conversation.id,
+              role: msg.role,
+              content: msg.content,
+              modelUsed: conversation.modelUsed,
+              contextData,
+              createdAt: msg.createdAt || now,
+            })
+            .run();
+        } else {
+          db.update(aiMessagesTable)
+            .set({
+              content: msg.content,
+              contextData,
+            })
+            .where(eq(aiMessagesTable.id, msg.id))
+            .run();
+        }
+      }
+    }
+
+    return (await this.get(conversation.id))!;
   },
 
   async create(data: {
@@ -113,10 +225,18 @@ export const conversationStore = {
   },
 
   async delete(id: string): Promise<boolean> {
-    const all = ensureConvFile();
-    const filtered = all.filter((c) => c.id !== id);
-    if (filtered.length === all.length) return false;
-    writeConvFile(filtered);
-    return true;
+    try {
+      db.delete(aiMessagesTable)
+        .where(eq(aiMessagesTable.conversationId, id))
+        .run();
+      const res = db
+        .delete(aiConversationsTable)
+        .where(eq(aiConversationsTable.id, id))
+        .run();
+      return res.changes > 0;
+    } catch (err) {
+      console.error(`[conversation-store] Error deleting conversation ${id}:`, err);
+      return false;
+    }
   },
 };

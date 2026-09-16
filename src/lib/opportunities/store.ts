@@ -1,20 +1,20 @@
-import fs from "fs";
-import path from "path";
+import { eq, desc, inArray } from "drizzle-orm";
+import { db } from "@/lib/db";
+import {
+  opportunitiesTable,
+  opportunityNotesTable,
+  opportunitySourcesTable,
+} from "@/lib/db/schema";
 import type {
   AiConfidence,
   AiPriority,
+  MyDecision,
   Opportunity,
   OpportunityNote,
   OpportunitySource,
   OpportunityStatus,
   ResearchScoreFactors,
 } from "./types";
-import { INITIAL_DEMO_OPPORTUNITIES } from "./seed-data";
-import { isSupabaseConfigured } from "@/lib/supabase/is-configured";
-import { createClient } from "@/lib/supabase/server";
-
-const DATA_DIR = path.join(process.cwd(), "data");
-const DATA_FILE = path.join(DATA_DIR, "opportunities.json");
 
 function calculateTotalScore(factors: Partial<ResearchScoreFactors>): number {
   const defaults: ResearchScoreFactors = {
@@ -51,45 +51,93 @@ export function deriveAiPriorityFromScore(score: number): AiPriority {
   return "VERY_LOW_PRIORITY";
 }
 
-// ── Local File Persistence ──────────────────────────────────────────────────
-
-function ensureDataFile(): Opportunity[] {
+function safeParseJson<T>(val: string | null | undefined, fallback: T): T {
+  if (!val) return fallback;
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify(INITIAL_DEMO_OPPORTUNITIES, null, 2), "utf-8");
-      return INITIAL_DEMO_OPPORTUNITIES;
-    }
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as Opportunity[];
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify(INITIAL_DEMO_OPPORTUNITIES, null, 2), "utf-8");
-      return INITIAL_DEMO_OPPORTUNITIES;
-    }
-    return parsed;
-  } catch (err) {
-    console.error("[opportunity-store] Error reading local data file:", err);
-    return INITIAL_DEMO_OPPORTUNITIES;
+    return JSON.parse(val) as T;
+  } catch {
+    return fallback;
   }
 }
 
-function writeDataFile(items: Opportunity[]) {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[opportunity-store] Error writing local data file:", err);
-  }
+function rowToOpportunity(
+  row: typeof opportunitiesTable.$inferSelect,
+  notes: OpportunityNote[] = [],
+): Opportunity {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || "",
+    problem: row.problem || "",
+    targetCustomer: row.targetCustomer || "",
+    industry: row.industry || "",
+    currentWorkflow: row.currentWorkflow || "",
+    currentSolutions: row.currentSolutions || "",
+    whyInteresting: row.whyInteresting || "",
+    whyTheProblemMatters: row.whyTheProblemMatters || "",
+    economicImpact: row.economicImpact || "",
+    marketSize: row.marketSize || "",
+    marketGap: row.marketGap || "",
+    aiOpportunity: row.aiOpportunity || "",
+    aiFit: (row.aiFit as any) || "MEDIUM",
+    aiPriority: (row.aiPriority as AiPriority) || "MEDIUM_POTENTIAL",
+    aiPriorityReasons: safeParseJson<string[]>(row.aiPriorityReasons, []),
+    aiConfidence: (row.aiConfidence as AiConfidence) || "MEDIUM",
+    researchScore: row.researchScore ?? 50,
+    researchScoreFactors: safeParseJson<ResearchScoreFactors>(row.researchScoreFactors, {
+      problemSeverity: 5,
+      problemFrequency: 5,
+      economicValue: 5,
+      willingnessToPay: 5,
+      marketOpportunity: 5,
+      competitionGap: 5,
+      aiFit: 5,
+      technicalFeasibility: 5,
+      distributionPotential: 5,
+      evidenceStrength: 5,
+    }),
+    evidenceStrength: (row.evidenceStrength as any) || "MEDIUM",
+    myDecision: (row.myDecision as MyDecision) || "UNDECIDED",
+    nextAction: row.nextAction || "",
+    myThoughts: row.myThoughts || "",
+    mvpFeatures: safeParseJson<string[]>(row.mvpFeatures, []),
+    excludedFeatures: safeParseJson<string[]>(row.excludedFeatures, []),
+    monetizationModel: row.monetizationModel || "",
+    pricingIdea: row.pricingIdea || "",
+    distributionChannels: safeParseJson<string[]>(row.distributionChannels, []),
+    executionRisks: safeParseJson<Array<{ risk: string; mitigation: string }>>(
+      row.executionRisks,
+      [],
+    ),
+    validation: safeParseJson(row.validation, {
+      interviewsCount: 0,
+      interestedCustomersCount: 0,
+      waitlistCount: 0,
+      assumptions: [],
+      risks: [],
+      validationQuestions: [],
+    }),
+    competitors: safeParseJson(row.competitors, []),
+    sources: safeParseJson<OpportunitySource[]>(row.sources, []),
+    notes,
+    status: row.status as OpportunityStatus,
+    isNewDiscovery: Boolean(row.isNewDiscovery),
+    isUserGenerated: Boolean(row.isUserGenerated),
+    createdBy: (row.createdBy as "AI" | "USER") || "AI",
+    source: row.source || "Discovery",
+    favorite: Boolean(row.favorite),
+    saved: Boolean(row.saved),
+    tags: safeParseJson<string[]>(row.tags, []),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 // ── Store API ───────────────────────────────────────────────────────────────
 
 export type OpportunityFilters = {
   status?: string;
+  isNewDiscovery?: boolean;
   aiPriority?: string;
   aiConfidence?: string;
   industry?: string;
@@ -102,170 +150,161 @@ export type OpportunityFilters = {
 
 export const opportunityStore = {
   async list(filters?: OpportunityFilters): Promise<Opportunity[]> {
-    let items: Opportunity[] = [];
+    try {
+      const rows = db.select().from(opportunitiesTable).all();
 
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = await createClient();
-        if (supabase) {
-          const { data, error } = await supabase
-            .from("opportunities")
-            .select("*")
-            .order("updated_at", { ascending: false });
+      // Fetch all notes mapped by opportunityId
+      const allNotes = db
+        .select()
+        .from(opportunityNotesTable)
+        .orderBy(desc(opportunityNotesTable.createdAt))
+        .all();
 
-          if (!error && data && data.length > 0) {
-            items = data.map((row) => ({
-              id: row.id,
-              title: row.title,
-              description: row.description ?? "",
-              problem: row.problem ?? "",
-              targetCustomer: row.target_customer ?? "",
-              industry: row.industry ?? "",
-              currentWorkflow: row.current_workflow,
-              currentSolutions: row.current_solutions,
-              whyInteresting: row.why_interesting,
-              whyTheProblemMatters: row.why_the_problem_matters,
-              economicImpact: row.economic_impact,
-              marketSize: row.market_size,
-              marketGap: row.market_gap,
-              aiOpportunity: row.ai_opportunity,
-              aiFit: row.ai_fit,
-              aiPriority: row.ai_priority,
-              aiPriorityReasons: row.ai_priority_reasons ?? [],
-              aiConfidence: row.ai_confidence,
-              researchScore: row.research_score ?? 50,
-              researchScoreFactors: row.research_score_factors ?? {},
-              evidenceStrength: row.evidence_strength,
-              myDecision: row.my_decision,
-              nextAction: row.next_action ?? "",
-              myThoughts: row.my_thoughts ?? "",
-              mvpFeatures: row.mvp_features ?? [],
-              excludedFeatures: row.excluded_features ?? [],
-              monetizationModel: row.monetization_model,
-              pricingIdea: row.pricing_idea,
-              distributionChannels: row.distribution_channels ?? [],
-              executionRisks: row.execution_risks ?? [],
-              validation: row.validation ?? {},
-              competitors: row.competitors ?? [],
-              sources: row.sources ?? [],
-              notes: row.notes ?? [],
-              status: row.status,
-              isUserGenerated: row.is_user_generated ?? false,
-              createdBy: row.created_by ?? "AI",
-              source: row.source ?? "Hermes",
-              favorite: row.favorite ?? false,
-              saved: row.saved ?? false,
-              tags: row.tags ?? [],
-              createdAt: row.created_at,
-              updatedAt: row.updated_at,
-            }));
-          }
-        }
-      } catch (e) {
-        console.warn("[opportunity-store] Supabase fetch fallback to local:", e);
-      }
-    }
-
-    if (items.length === 0) {
-      items = ensureDataFile();
-    }
-
-    // Apply filtering
-    let filtered = [...items];
-
-    if (filters) {
-      if (filters.status) {
-        filtered = filtered.filter((o) => o.status === filters.status);
-      }
-      if (filters.aiPriority) {
-        filtered = filtered.filter((o) => o.aiPriority === filters.aiPriority);
-      }
-      if (filters.aiConfidence) {
-        filtered = filtered.filter((o) => o.aiConfidence === filters.aiConfidence);
-      }
-      if (filters.industry) {
-        filtered = filtered.filter(
-          (o) => o.industry.toLowerCase() === filters.industry?.toLowerCase(),
-        );
-      }
-      if (typeof filters.favorite === "boolean") {
-        filtered = filtered.filter((o) => o.favorite === filters.favorite);
-      }
-      if (typeof filters.saved === "boolean") {
-        filtered = filtered.filter((o) => o.saved === filters.saved);
-      }
-      if (typeof filters.isUserGenerated === "boolean") {
-        filtered = filtered.filter((o) => o.isUserGenerated === filters.isUserGenerated);
-      }
-      if (filters.search) {
-        const q = filters.search.toLowerCase().trim();
-        filtered = filtered.filter((o) => {
-          return (
-            o.title.toLowerCase().includes(q) ||
-            o.problem.toLowerCase().includes(q) ||
-            o.targetCustomer.toLowerCase().includes(q) ||
-            o.industry.toLowerCase().includes(q) ||
-            (o.tags && o.tags.some((t) => t.toLowerCase().includes(q))) ||
-            (o.myThoughts && o.myThoughts.toLowerCase().includes(q)) ||
-            (o.notes && o.notes.some((n) => n.content.toLowerCase().includes(q)))
-          );
+      const notesMap = new Map<string, OpportunityNote[]>();
+      for (const note of allNotes) {
+        const existing = notesMap.get(note.opportunityId) || [];
+        existing.push({
+          id: note.id,
+          content: note.content,
+          createdAt: note.createdAt,
         });
+        notesMap.set(note.opportunityId, existing);
       }
 
-      // Sorting
-      if (filters.sortBy) {
-        switch (filters.sortBy) {
-          case "score-desc":
-            filtered.sort((a, b) => b.researchScore - a.researchScore);
-            break;
-          case "priority-desc": {
-            const rank: Record<AiPriority, number> = {
-              HIGH_POTENTIAL: 5,
-              MEDIUM_POTENTIAL: 4,
-              CRITICAL_REVIEW: 3,
-              LOW_POTENTIAL: 2,
-              VERY_LOW_PRIORITY: 1,
-            };
-            filtered.sort((a, b) => (rank[b.aiPriority] ?? 0) - (rank[a.aiPriority] ?? 0));
-            break;
+      let items = rows.map((r) => rowToOpportunity(r, notesMap.get(r.id) || []));
+
+      // Apply filtering
+      if (filters) {
+        if (typeof filters.isNewDiscovery === "boolean") {
+          items = items.filter((o) => o.isNewDiscovery === filters.isNewDiscovery);
+        }
+        if (filters.status) {
+          items = items.filter((o) => o.status === filters.status);
+        }
+        if (filters.aiPriority) {
+          items = items.filter((o) => o.aiPriority === filters.aiPriority);
+        }
+        if (filters.aiConfidence) {
+          items = items.filter((o) => o.aiConfidence === filters.aiConfidence);
+        }
+        if (filters.industry) {
+          items = items.filter(
+            (o) => o.industry.toLowerCase() === filters.industry?.toLowerCase(),
+          );
+        }
+        if (typeof filters.favorite === "boolean") {
+          items = items.filter((o) => o.favorite === filters.favorite);
+        }
+        if (typeof filters.saved === "boolean") {
+          items = items.filter((o) => o.saved === filters.saved);
+        }
+        if (typeof filters.isUserGenerated === "boolean") {
+          items = items.filter((o) => o.isUserGenerated === filters.isUserGenerated);
+        }
+        if (filters.search) {
+          const q = filters.search.toLowerCase().trim();
+          items = items.filter((o) => {
+            return (
+              o.title.toLowerCase().includes(q) ||
+              o.problem.toLowerCase().includes(q) ||
+              o.targetCustomer.toLowerCase().includes(q) ||
+              o.industry.toLowerCase().includes(q) ||
+              (o.tags && o.tags.some((t) => t.toLowerCase().includes(q))) ||
+              (o.myThoughts && o.myThoughts.toLowerCase().includes(q)) ||
+              (o.notes && o.notes.some((n) => n.content.toLowerCase().includes(q)))
+            );
+          });
+        }
+
+        // Sorting
+        if (filters.sortBy) {
+          switch (filters.sortBy) {
+            case "score-desc":
+              items.sort((a, b) => b.researchScore - a.researchScore);
+              break;
+            case "priority-desc": {
+              const rank: Record<AiPriority, number> = {
+                HIGH_POTENTIAL: 5,
+                MEDIUM_POTENTIAL: 4,
+                CRITICAL_REVIEW: 3,
+                LOW_POTENTIAL: 2,
+                VERY_LOW_PRIORITY: 1,
+              };
+              items.sort((a, b) => (rank[b.aiPriority] ?? 0) - (rank[a.aiPriority] ?? 0));
+              break;
+            }
+            case "newest":
+              items.sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+              );
+              break;
+            case "oldest":
+              items.sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+              );
+              break;
+            case "evidence-desc": {
+              const rank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+              items.sort(
+                (a, b) =>
+                  (rank[b.evidenceStrength as keyof typeof rank] ?? 0) -
+                  (rank[a.evidenceStrength as keyof typeof rank] ?? 0),
+              );
+              break;
+            }
+            case "updated":
+            default:
+              items.sort(
+                (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+              );
+              break;
           }
-          case "newest":
-            filtered.sort(
-              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-            );
-            break;
-          case "oldest":
-            filtered.sort(
-              (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-            );
-            break;
-          case "evidence-desc": {
-            const rank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
-            filtered.sort((a, b) => (rank[b.evidenceStrength] ?? 0) - (rank[a.evidenceStrength] ?? 0));
-            break;
-          }
-          case "updated":
-          default:
-            filtered.sort(
-              (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-            );
-            break;
+        } else {
+          // Default newest/updated first
+          items.sort(
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+          );
         }
       }
-    }
 
-    return filtered;
+      return items;
+    } catch (err) {
+      console.error("[opportunity-store] Error in list():", err);
+      return [];
+    }
   },
 
   async get(id: string): Promise<Opportunity | null> {
-    const all = await this.list();
-    return all.find((o) => o.id === id) ?? null;
+    try {
+      const row = db
+        .select()
+        .from(opportunitiesTable)
+        .where(eq(opportunitiesTable.id, id))
+        .get();
+
+      if (!row) return null;
+
+      const notes = db
+        .select()
+        .from(opportunityNotesTable)
+        .where(eq(opportunityNotesTable.opportunityId, id))
+        .orderBy(desc(opportunityNotesTable.createdAt))
+        .all()
+        .map((n) => ({
+          id: n.id,
+          content: n.content,
+          createdAt: n.createdAt,
+        }));
+
+      return rowToOpportunity(row, notes);
+    } catch (err) {
+      console.error(`[opportunity-store] Error in get(${id}):`, err);
+      return null;
+    }
   },
 
   async create(input: Partial<Opportunity>): Promise<Opportunity> {
-    const items = ensureDataFile();
     const now = new Date().toISOString();
-
     const id =
       input.id ||
       `opp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -294,7 +333,15 @@ export const opportunityStore = {
         ? input.isUserGenerated
         : input.createdBy === "USER";
 
-    const newOpp: Opportunity = {
+    // Newly discovered items go to inbox (isNewDiscovery = true) unless user created or explicit
+    const isNewDiscovery =
+      input.isNewDiscovery !== undefined
+        ? input.isNewDiscovery
+        : isUserGenerated
+          ? false
+          : true;
+
+    const row: typeof opportunitiesTable.$inferInsert = {
       id,
       title: input.title || "Untitled Opportunity",
       description: input.description || "",
@@ -311,116 +358,67 @@ export const opportunityStore = {
       aiOpportunity: input.aiOpportunity || "",
       aiFit: input.aiFit || "MEDIUM",
       aiPriority: input.aiPriority || deriveAiPriorityFromScore(calculatedScore),
-      aiPriorityReasons: input.aiPriorityReasons || [],
+      aiPriorityReasons: JSON.stringify(input.aiPriorityReasons || []),
       aiConfidence: input.aiConfidence || "MEDIUM",
       researchScore: calculatedScore,
-      researchScoreFactors: factors,
+      researchScoreFactors: JSON.stringify(factors),
       evidenceStrength: input.evidenceStrength || "MEDIUM",
       myDecision: input.myDecision || "UNDECIDED",
       nextAction: input.nextAction || "",
       myThoughts: input.myThoughts || "",
-      mvpFeatures: input.mvpFeatures || [],
-      excludedFeatures: input.excludedFeatures || [],
+      mvpFeatures: JSON.stringify(input.mvpFeatures || []),
+      excludedFeatures: JSON.stringify(input.excludedFeatures || []),
       monetizationModel: input.monetizationModel || "",
       pricingIdea: input.pricingIdea || "",
-      distributionChannels: input.distributionChannels || [],
-      executionRisks: input.executionRisks || [],
-      validation: input.validation || {
-        interviewsCount: 0,
-        interestedCustomersCount: 0,
-        waitlistCount: 0,
-        assumptions: [],
-        risks: [],
-        validationQuestions: [],
-      },
-      competitors: input.competitors || [],
-      sources: input.sources || [],
-      notes: input.notes || [],
+      distributionChannels: JSON.stringify(input.distributionChannels || []),
+      executionRisks: JSON.stringify(input.executionRisks || []),
+      validation: JSON.stringify(
+        input.validation || {
+          interviewsCount: 0,
+          interestedCustomersCount: 0,
+          waitlistCount: 0,
+          assumptions: [],
+          risks: [],
+          validationQuestions: [],
+        },
+      ),
+      competitors: JSON.stringify(input.competitors || []),
+      sources: JSON.stringify(input.sources || []),
       status: input.status || "NEW",
-      isUserGenerated,
+      isNewDiscovery: isNewDiscovery ? 1 : 0,
+      isUserGenerated: isUserGenerated ? 1 : 0,
       createdBy: input.createdBy || (isUserGenerated ? "USER" : "AI"),
-      source: input.source || (isUserGenerated ? "Manual" : "Hermes"),
-      favorite: !!input.favorite,
-      saved: !!input.saved,
-      tags: input.tags || [],
+      source: input.source || (isUserGenerated ? "Manual" : "Discovery"),
+      favorite: input.favorite ? 1 : 0,
+      saved: input.saved ? 1 : 0,
+      tags: JSON.stringify(input.tags || []),
       createdAt: now,
       updatedAt: now,
     };
 
-    // Save locally
-    const existingIndex = items.findIndex((o) => o.id === newOpp.id);
-    if (existingIndex >= 0) {
-      items[existingIndex] = newOpp;
-    } else {
-      items.unshift(newOpp);
-    }
-    writeDataFile(items);
+    db.insert(opportunitiesTable).values(row).run();
 
-    // Sync to Supabase if available
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = await createClient();
-        if (supabase) {
-          await supabase.from("opportunities").upsert({
-            id: newOpp.id,
-            title: newOpp.title,
-            description: newOpp.description,
-            problem: newOpp.problem,
-            target_customer: newOpp.targetCustomer,
-            industry: newOpp.industry,
-            current_workflow: newOpp.currentWorkflow,
-            current_solutions: newOpp.currentSolutions,
-            why_interesting: newOpp.whyInteresting,
-            why_the_problem_matters: newOpp.whyTheProblemMatters,
-            economic_impact: newOpp.economicImpact,
-            market_size: newOpp.marketSize,
-            market_gap: newOpp.marketGap,
-            ai_opportunity: newOpp.aiOpportunity,
-            ai_fit: newOpp.aiFit,
-            ai_priority: newOpp.aiPriority,
-            ai_priority_reasons: newOpp.aiPriorityReasons,
-            ai_confidence: newOpp.aiConfidence,
-            research_score: newOpp.researchScore,
-            research_score_factors: newOpp.researchScoreFactors,
-            evidence_strength: newOpp.evidenceStrength,
-            my_decision: newOpp.myDecision,
-            next_action: newOpp.nextAction,
-            my_thoughts: newOpp.myThoughts,
-            mvp_features: newOpp.mvpFeatures,
-            excluded_features: newOpp.excludedFeatures,
-            monetization_model: newOpp.monetizationModel,
-            pricing_idea: newOpp.pricingIdea,
-            distribution_channels: newOpp.distributionChannels,
-            execution_risks: newOpp.executionRisks,
-            validation: newOpp.validation,
-            competitors: newOpp.competitors,
-            sources: newOpp.sources,
-            notes: newOpp.notes,
-            status: newOpp.status,
-            is_user_generated: newOpp.isUserGenerated,
-            created_by: newOpp.createdBy,
-            source: newOpp.source,
-            favorite: newOpp.favorite,
-            saved: newOpp.saved,
-            tags: newOpp.tags,
-            created_at: newOpp.createdAt,
-            updated_at: newOpp.updatedAt,
-          });
-        }
-      } catch (err) {
-        console.warn("[opportunity-store] Supabase upsert error:", err);
+    // Insert notes if any
+    if (input.notes && input.notes.length > 0) {
+      for (const n of input.notes) {
+        db.insert(opportunityNotesTable)
+          .values({
+            id: n.id || `note-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+            opportunityId: id,
+            content: n.content,
+            createdAt: n.createdAt || now,
+          })
+          .run();
       }
     }
 
-    return newOpp;
+    return (await this.get(id))!;
   },
 
   async update(id: string, updates: Partial<Opportunity>): Promise<Opportunity | null> {
-    const items = ensureDataFile();
-    const idx = items.findIndex((o) => o.id === id);
-    if (idx === -1) return null;
+    const existing = await this.get(id);
+    if (!existing) return null;
 
-    const existing = items[idx];
     const updatedScoreFactors = {
       ...existing.researchScoreFactors,
       ...(updates.researchScoreFactors ?? {}),
@@ -432,96 +430,76 @@ export const opportunityStore = {
           ? calculateTotalScore(updatedScoreFactors)
           : existing.researchScore;
 
-    const updated: Opportunity = {
-      ...existing,
-      ...updates,
-      id: existing.id, // Immutable ID
-      createdAt: existing.createdAt,
+    const valuesToUpdate: Partial<typeof opportunitiesTable.$inferInsert> = {
       updatedAt: new Date().toISOString(),
-      researchScore: updatedScore,
-      researchScoreFactors: updatedScoreFactors,
     };
 
-    items[idx] = updated;
-    writeDataFile(items);
-
-    // Sync to Supabase if configured
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = await createClient();
-        if (supabase) {
-          await supabase
-            .from("opportunities")
-            .update({
-              title: updated.title,
-              description: updated.description,
-              problem: updated.problem,
-              target_customer: updated.targetCustomer,
-              industry: updated.industry,
-              current_workflow: updated.currentWorkflow,
-              current_solutions: updated.currentSolutions,
-              why_interesting: updated.whyInteresting,
-              why_the_problem_matters: updated.whyTheProblemMatters,
-              economic_impact: updated.economicImpact,
-              market_size: updated.marketSize,
-              market_gap: updated.marketGap,
-              ai_opportunity: updated.aiOpportunity,
-              ai_fit: updated.aiFit,
-              ai_priority: updated.aiPriority,
-              ai_priority_reasons: updated.aiPriorityReasons,
-              ai_confidence: updated.aiConfidence,
-              research_score: updated.researchScore,
-              research_score_factors: updated.researchScoreFactors,
-              evidence_strength: updated.evidenceStrength,
-              my_decision: updated.myDecision,
-              next_action: updated.nextAction,
-              my_thoughts: updated.myThoughts,
-              mvp_features: updated.mvpFeatures,
-              excluded_features: updated.excludedFeatures,
-              monetization_model: updated.monetizationModel,
-              pricing_idea: updated.pricingIdea,
-              distribution_channels: updated.distributionChannels,
-              execution_risks: updated.executionRisks,
-              validation: updated.validation,
-              competitors: updated.competitors,
-              sources: updated.sources,
-              notes: updated.notes,
-              status: updated.status,
-              is_user_generated: updated.isUserGenerated,
-              favorite: updated.favorite,
-              saved: updated.saved,
-              tags: updated.tags,
-              updated_at: updated.updatedAt,
-            })
-            .eq("id", id);
-        }
-      } catch (err) {
-        console.warn("[opportunity-store] Supabase update error:", err);
-      }
+    if (updates.title !== undefined) valuesToUpdate.title = updates.title;
+    if (updates.description !== undefined) valuesToUpdate.description = updates.description;
+    if (updates.problem !== undefined) valuesToUpdate.problem = updates.problem;
+    if (updates.targetCustomer !== undefined) valuesToUpdate.targetCustomer = updates.targetCustomer;
+    if (updates.industry !== undefined) valuesToUpdate.industry = updates.industry;
+    if (updates.currentWorkflow !== undefined) valuesToUpdate.currentWorkflow = updates.currentWorkflow;
+    if (updates.currentSolutions !== undefined) valuesToUpdate.currentSolutions = updates.currentSolutions;
+    if (updates.whyInteresting !== undefined) valuesToUpdate.whyInteresting = updates.whyInteresting;
+    if (updates.whyTheProblemMatters !== undefined) valuesToUpdate.whyTheProblemMatters = updates.whyTheProblemMatters;
+    if (updates.economicImpact !== undefined) valuesToUpdate.economicImpact = updates.economicImpact;
+    if (updates.marketSize !== undefined) valuesToUpdate.marketSize = updates.marketSize;
+    if (updates.marketGap !== undefined) valuesToUpdate.marketGap = updates.marketGap;
+    if (updates.aiOpportunity !== undefined) valuesToUpdate.aiOpportunity = updates.aiOpportunity;
+    if (updates.aiFit !== undefined) valuesToUpdate.aiFit = updates.aiFit;
+    if (updates.aiPriority !== undefined) valuesToUpdate.aiPriority = updates.aiPriority;
+    if (updates.aiPriorityReasons !== undefined) valuesToUpdate.aiPriorityReasons = JSON.stringify(updates.aiPriorityReasons);
+    if (updates.aiConfidence !== undefined) valuesToUpdate.aiConfidence = updates.aiConfidence;
+    if (updates.researchScoreFactors !== undefined || typeof updates.researchScore === "number") {
+      valuesToUpdate.researchScore = updatedScore;
+      valuesToUpdate.researchScoreFactors = JSON.stringify(updatedScoreFactors);
     }
+    if (updates.evidenceStrength !== undefined) valuesToUpdate.evidenceStrength = updates.evidenceStrength;
+    if (updates.myDecision !== undefined) valuesToUpdate.myDecision = updates.myDecision;
+    if (updates.nextAction !== undefined) valuesToUpdate.nextAction = updates.nextAction;
+    if (updates.myThoughts !== undefined) valuesToUpdate.myThoughts = updates.myThoughts;
+    if (updates.mvpFeatures !== undefined) valuesToUpdate.mvpFeatures = JSON.stringify(updates.mvpFeatures);
+    if (updates.excludedFeatures !== undefined) valuesToUpdate.excludedFeatures = JSON.stringify(updates.excludedFeatures);
+    if (updates.monetizationModel !== undefined) valuesToUpdate.monetizationModel = updates.monetizationModel;
+    if (updates.pricingIdea !== undefined) valuesToUpdate.pricingIdea = updates.pricingIdea;
+    if (updates.distributionChannels !== undefined) valuesToUpdate.distributionChannels = JSON.stringify(updates.distributionChannels);
+    if (updates.executionRisks !== undefined) valuesToUpdate.executionRisks = JSON.stringify(updates.executionRisks);
+    if (updates.validation !== undefined) valuesToUpdate.validation = JSON.stringify(updates.validation);
+    if (updates.competitors !== undefined) valuesToUpdate.competitors = JSON.stringify(updates.competitors);
+    if (updates.sources !== undefined) valuesToUpdate.sources = JSON.stringify(updates.sources);
+    if (updates.status !== undefined) valuesToUpdate.status = updates.status;
+    if (updates.isNewDiscovery !== undefined) valuesToUpdate.isNewDiscovery = updates.isNewDiscovery ? 1 : 0;
+    if (updates.isUserGenerated !== undefined) valuesToUpdate.isUserGenerated = updates.isUserGenerated ? 1 : 0;
+    if (updates.favorite !== undefined) valuesToUpdate.favorite = updates.favorite ? 1 : 0;
+    if (updates.saved !== undefined) valuesToUpdate.saved = updates.saved ? 1 : 0;
+    if (updates.tags !== undefined) valuesToUpdate.tags = JSON.stringify(updates.tags);
 
-    return updated;
+    db.update(opportunitiesTable)
+      .set(valuesToUpdate)
+      .where(eq(opportunitiesTable.id, id))
+      .run();
+
+    return this.get(id);
   },
 
   async delete(id: string): Promise<boolean> {
-    const items = ensureDataFile();
-    const filtered = items.filter((o) => o.id !== id);
-    if (filtered.length === items.length) return false;
-
-    writeDataFile(filtered);
-
-    if (isSupabaseConfigured()) {
-      try {
-        const supabase = await createClient();
-        if (supabase) {
-          await supabase.from("opportunities").delete().eq("id", id);
-        }
-      } catch (err) {
-        console.warn("[opportunity-store] Supabase delete error:", err);
-      }
+    try {
+      db.delete(opportunityNotesTable)
+        .where(eq(opportunityNotesTable.opportunityId, id))
+        .run();
+      db.delete(opportunitySourcesTable)
+        .where(eq(opportunitySourcesTable.opportunityId, id))
+        .run();
+      const res = db
+        .delete(opportunitiesTable)
+        .where(eq(opportunitiesTable.id, id))
+        .run();
+      return res.changes > 0;
+    } catch (err) {
+      console.error(`[opportunity-store] Error in delete(${id}):`, err);
+      return false;
     }
-
-    return true;
   },
 
   async updateStatus(id: string, status: OpportunityStatus): Promise<Opportunity | null> {
@@ -540,45 +518,99 @@ export const opportunityStore = {
     return this.update(id, updates);
   },
 
+  async keepDiscovery(id: string): Promise<Opportunity | null> {
+    const existing = await this.get(id);
+    if (!existing) return null;
+    return this.update(id, {
+      isNewDiscovery: false,
+      status: existing.status === "NEW" ? "REVIEW" : existing.status,
+    });
+  },
+
+  async rejectDiscovery(id: string): Promise<Opportunity | null> {
+    return this.update(id, {
+      isNewDiscovery: false,
+      status: "REJECTED",
+      myDecision: "DO_NOT_BUILD",
+    });
+  },
+
+  async bulkUpdateDecision(ids: string[], decision: MyDecision): Promise<number> {
+    if (ids.length === 0) return 0;
+    const now = new Date().toISOString();
+    const res = db
+      .update(opportunitiesTable)
+      .set({ myDecision: decision, updatedAt: now })
+      .where(inArray(opportunitiesTable.id, ids))
+      .run();
+    return res.changes;
+  },
+
   async addNote(id: string, content: string): Promise<Opportunity | null> {
     const opp = await this.get(id);
     if (!opp) return null;
 
-    const newNote: OpportunityNote = {
-      id: `note-${Date.now().toString(36)}`,
-      content,
-      createdAt: new Date().toISOString(),
-    };
+    const newNoteId = `note-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
+    const now = new Date().toISOString();
 
-    const notes = [newNote, ...(opp.notes || [])];
-    return this.update(id, { notes });
+    db.insert(opportunityNotesTable)
+      .values({
+        id: newNoteId,
+        opportunityId: id,
+        content,
+        createdAt: now,
+      })
+      .run();
+
+    await this.update(id, {});
+    return this.get(id);
   },
 
   async deleteNote(id: string, noteId: string): Promise<Opportunity | null> {
-    const opp = await this.get(id);
-    if (!opp) return null;
-
-    const notes = (opp.notes || []).filter((n) => n.id !== noteId);
-    return this.update(id, { notes });
+    db.delete(opportunityNotesTable)
+      .where(eq(opportunityNotesTable.id, noteId))
+      .run();
+    await this.update(id, {});
+    return this.get(id);
   },
 
   async addSource(id: string, source: OpportunitySource): Promise<Opportunity | null> {
     const opp = await this.get(id);
     if (!opp) return null;
 
+    const sourceId = source.id || `src-${Date.now().toString(36)}`;
     const newSource: OpportunitySource = {
       ...source,
-      id: source.id || `src-${Date.now().toString(36)}`,
+      id: sourceId,
       grading: source.grading || "INFERENCE",
     };
 
     const sources = [...(opp.sources || []), newSource];
+
+    db.insert(opportunitySourcesTable)
+      .values({
+        id: sourceId,
+        opportunityId: id,
+        title: source.title || "",
+        url: source.url || "",
+        sourceType: source.sourceType || "",
+        date: source.date || "",
+        summary: source.summary || "",
+        claimSupported: source.evidenceRelevance || "",
+        createdAt: new Date().toISOString(),
+      })
+      .run();
+
     return this.update(id, { sources });
   },
 
   async deleteSource(id: string, sourceId: string): Promise<Opportunity | null> {
     const opp = await this.get(id);
     if (!opp) return null;
+
+    db.delete(opportunitySourcesTable)
+      .where(eq(opportunitySourcesTable.id, sourceId))
+      .run();
 
     const sources = (opp.sources || []).filter((s) => s.id !== sourceId);
     return this.update(id, { sources });

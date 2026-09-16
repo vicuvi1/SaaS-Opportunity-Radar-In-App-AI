@@ -650,6 +650,171 @@ export class HackerNewsProvider implements BaseProvider {
   }
 }
 
+// ── Tavily Provider ─────────────────────────────────────────────────────────
+export class TavilyProvider implements BaseProvider {
+  id = "tavily";
+  name = "Tavily AI Search";
+  category: IntegrationCategory = "signal";
+  description = "AI-optimized search and content extraction engine for web research and competitor discovery.";
+  icon = "Search";
+  authType: "api_key" = "api_key";
+  requiresAuth = true;
+  features = ["Competitor discovery", "Pricing extraction", "Market reports", "Deep web crawling"];
+
+  async test(credentials: { apiKey?: string }): Promise<TestResult> {
+    const key = credentials.apiKey || process.env.TAVILY_API_KEY;
+    if (!key) return { success: false, message: "Missing Tavily API Key" };
+
+    try {
+      const res = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: key, query: "test", max_results: 1 }),
+      });
+      if (res.ok) {
+        return { success: true, accountName: "Tavily Account", message: "Successfully connected to Tavily" };
+      }
+      return { success: false, message: `Tavily returned HTTP ${res.status}` };
+    } catch (err: any) {
+      return { success: false, message: err.message || "Connection failed" };
+    }
+  }
+
+  async getClientCard(userId?: string): Promise<ClientIntegrationCard> {
+    const conn = await getIntegrationConnection(userId, this.id);
+    const creds = await getIntegrationCredentials(userId, this.id);
+    const masked = buildMaskedCredentials(creds);
+
+    return {
+      id: this.id,
+      name: this.name,
+      category: this.category,
+      description: this.description,
+      icon: this.icon,
+      status: conn?.status || (process.env.TAVILY_API_KEY ? "CONNECTED" : "NOT_CONNECTED"),
+      accountName: conn?.accountName || (process.env.TAVILY_API_KEY ? "Environment Variable" : undefined),
+      accountMetadata: conn?.accountMetadata || null,
+      maskedCredentials: masked,
+      lastTestedAt: conn?.lastTestedAt || null,
+      errorMessage: conn?.errorMessage || null,
+      requiresAuth: this.requiresAuth,
+      authType: this.authType,
+      features: this.features,
+    };
+  }
+}
+
+// ── Exa Provider ────────────────────────────────────────────────────────────
+export class ExaProvider implements BaseProvider {
+  id = "exa";
+  name = "Exa Neural Search";
+  category: IntegrationCategory = "signal";
+  description = "Semantic AI search designed to discover lookalike companies, market discussions, and landing pages.";
+  icon = "Sparkles";
+  authType: "api_key" = "api_key";
+  requiresAuth = true;
+  features = ["Neural semantic search", "Company discovery", "Competitor lookalikes", "Clean text retrieval"];
+
+  async test(credentials: { apiKey?: string }): Promise<TestResult> {
+    const key = credentials.apiKey || process.env.EXA_API_KEY;
+    if (!key) return { success: false, message: "Missing Exa API Key" };
+
+    try {
+      const res = await fetch("https://api.exa.ai/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": key },
+        body: JSON.stringify({ query: "saas", numResults: 1 }),
+      });
+      if (res.ok) {
+        return { success: true, accountName: "Exa Account", message: "Successfully connected to Exa" };
+      }
+      return { success: false, message: `Exa returned HTTP ${res.status}` };
+    } catch (err: any) {
+      return { success: false, message: err.message || "Connection failed" };
+    }
+  }
+
+  async getClientCard(userId?: string): Promise<ClientIntegrationCard> {
+    const conn = await getIntegrationConnection(userId, this.id);
+    const creds = await getIntegrationCredentials(userId, this.id);
+    const masked = buildMaskedCredentials(creds);
+
+    return {
+      id: this.id,
+      name: this.name,
+      category: this.category,
+      description: this.description,
+      icon: this.icon,
+      status: conn?.status || (process.env.EXA_API_KEY ? "CONNECTED" : "NOT_CONNECTED"),
+      accountName: conn?.accountName || (process.env.EXA_API_KEY ? "Environment Variable" : undefined),
+      accountMetadata: conn?.accountMetadata || null,
+      maskedCredentials: masked,
+      lastTestedAt: conn?.lastTestedAt || null,
+      errorMessage: conn?.errorMessage || null,
+      requiresAuth: this.requiresAuth,
+      authType: this.authType,
+      features: this.features,
+    };
+  }
+}
+
+// ── Firecrawl Provider ──────────────────────────────────────────────────────
+export class FirecrawlProvider implements BaseProvider {
+  id = "firecrawl";
+  name = "Firecrawl Engine";
+  category: IntegrationCategory = "signal";
+  description = "Converts complex web pages and competitor sites into clean, LLM-ready markdown.";
+  icon = "FileText";
+  authType: "api_key" = "api_key";
+  requiresAuth = true;
+  features = ["Full website scraping", "LLM-ready markdown", "Dynamic JS rendering", "Anti-bot bypass"];
+
+  async test(credentials: { apiKey?: string }): Promise<TestResult> {
+    const key = credentials.apiKey || process.env.FIRECRAWL_API_KEY;
+    if (!key) return { success: false, message: "Missing Firecrawl API Key" };
+
+    try {
+      const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({ url: "https://example.com" }),
+      });
+      if (res.ok) {
+        return { success: true, accountName: "Firecrawl Account", message: "Successfully connected to Firecrawl" };
+      }
+      return { success: false, message: `Firecrawl returned HTTP ${res.status}` };
+    } catch (err: any) {
+      return { success: false, message: err.message || "Connection failed" };
+    }
+  }
+
+  async getClientCard(userId?: string): Promise<ClientIntegrationCard> {
+    const conn = await getIntegrationConnection(userId, this.id);
+    const creds = await getIntegrationCredentials(userId, this.id);
+    const masked = buildMaskedCredentials(creds);
+
+    return {
+      id: this.id,
+      name: this.name,
+      category: this.category,
+      description: this.description,
+      icon: this.icon,
+      status: conn?.status || (process.env.FIRECRAWL_API_KEY ? "CONNECTED" : "NOT_CONNECTED"),
+      accountName: conn?.accountName || (process.env.FIRECRAWL_API_KEY ? "Environment Variable" : undefined),
+      accountMetadata: conn?.accountMetadata || null,
+      maskedCredentials: masked,
+      lastTestedAt: conn?.lastTestedAt || null,
+      errorMessage: conn?.errorMessage || null,
+      requiresAuth: this.requiresAuth,
+      authType: this.authType,
+      features: this.features,
+    };
+  }
+}
+
 // ── Registry Class ────────────────────────────────────────────────────────────
 export class IntegrationRegistry {
   private static providers: Map<IntegrationProviderId, BaseProvider> = new Map<IntegrationProviderId, BaseProvider>([
@@ -657,6 +822,9 @@ export class IntegrationRegistry {
     ["reddit", new RedditProvider()],
     ["github", new GitHubProvider()],
     ["producthunt", new ProductHuntProvider()],
+    ["tavily", new TavilyProvider()],
+    ["exa", new ExaProvider()],
+    ["firecrawl", new FirecrawlProvider()],
     ["telegram", new TelegramProvider()],
     ["hackernews", new HackerNewsProvider()],
   ]);

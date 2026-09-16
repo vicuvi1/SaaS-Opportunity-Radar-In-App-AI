@@ -223,6 +223,27 @@ function initializeTables(sqlite: Database.Database) {
   try {
     sqlite.exec("ALTER TABLE opportunities ADD COLUMN why_this_opportunity TEXT DEFAULT '[]';");
   } catch {}
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN market_crowdedness TEXT DEFAULT 'MEDIUM';");
+  } catch {}
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN market_crowdedness_score INTEGER DEFAULT 50;");
+  } catch {}
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN why_it_could_work TEXT DEFAULT '[]';");
+  } catch {}
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN why_it_might_not_work TEXT DEFAULT '[]';");
+  } catch {}
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN what_we_still_dont_know TEXT DEFAULT '[]';");
+  } catch {}
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN next_validation_steps TEXT DEFAULT '[]';");
+  } catch {}
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN last_deep_research_at TEXT;");
+  } catch {}
 
   // Safe migration for workflow statuses and human decisions
   try {

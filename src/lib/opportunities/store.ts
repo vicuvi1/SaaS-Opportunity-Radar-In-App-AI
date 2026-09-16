@@ -120,6 +120,13 @@ function rowToOpportunity(
     competitors: safeParseJson(row.competitors, []),
     sources: safeParseJson<OpportunitySource[]>(row.sources, []),
     notes,
+    marketCrowdedness: (row.marketCrowdedness as any) || "MEDIUM",
+    marketCrowdednessScore: row.marketCrowdednessScore ?? 50,
+    whyItCouldWork: safeParseJson<string[]>(row.whyItCouldWork, []),
+    whyItMightNotWork: safeParseJson<string[]>(row.whyItMightNotWork, []),
+    whatWeStillDontKnow: safeParseJson<string[]>(row.whatWeStillDontKnow, []),
+    nextValidationSteps: safeParseJson<string[]>(row.nextValidationSteps, []),
+    lastDeepResearchAt: row.lastDeepResearchAt || undefined,
     status: row.status as OpportunityStatus,
     isNewDiscovery: Boolean(row.isNewDiscovery),
     researchRunId: (row as any).researchRunId || undefined,
@@ -403,6 +410,13 @@ export const opportunityStore = {
       ),
       competitors: JSON.stringify(input.competitors || []),
       sources: JSON.stringify(input.sources || []),
+      marketCrowdedness: input.marketCrowdedness || "MEDIUM",
+      marketCrowdednessScore: input.marketCrowdednessScore ?? 50,
+      whyItCouldWork: JSON.stringify(input.whyItCouldWork || []),
+      whyItMightNotWork: JSON.stringify(input.whyItMightNotWork || []),
+      whatWeStillDontKnow: JSON.stringify(input.whatWeStillDontKnow || []),
+      nextValidationSteps: JSON.stringify(input.nextValidationSteps || []),
+      lastDeepResearchAt: input.lastDeepResearchAt || null,
       status: input.status || "NEW",
       isNewDiscovery: isNewDiscovery ? 1 : 0,
       isUserGenerated: isUserGenerated ? 1 : 0,
@@ -487,6 +501,13 @@ export const opportunityStore = {
     if (updates.validation !== undefined) valuesToUpdate.validation = JSON.stringify(updates.validation);
     if (updates.competitors !== undefined) valuesToUpdate.competitors = JSON.stringify(updates.competitors);
     if (updates.sources !== undefined) valuesToUpdate.sources = JSON.stringify(updates.sources);
+    if (updates.marketCrowdedness !== undefined) valuesToUpdate.marketCrowdedness = updates.marketCrowdedness;
+    if (updates.marketCrowdednessScore !== undefined) valuesToUpdate.marketCrowdednessScore = updates.marketCrowdednessScore;
+    if (updates.whyItCouldWork !== undefined) valuesToUpdate.whyItCouldWork = JSON.stringify(updates.whyItCouldWork);
+    if (updates.whyItMightNotWork !== undefined) valuesToUpdate.whyItMightNotWork = JSON.stringify(updates.whyItMightNotWork);
+    if (updates.whatWeStillDontKnow !== undefined) valuesToUpdate.whatWeStillDontKnow = JSON.stringify(updates.whatWeStillDontKnow);
+    if (updates.nextValidationSteps !== undefined) valuesToUpdate.nextValidationSteps = JSON.stringify(updates.nextValidationSteps);
+    if (updates.lastDeepResearchAt !== undefined) valuesToUpdate.lastDeepResearchAt = updates.lastDeepResearchAt;
     if (updates.status !== undefined) valuesToUpdate.status = updates.status;
     if (updates.isNewDiscovery !== undefined) valuesToUpdate.isNewDiscovery = updates.isNewDiscovery ? 1 : 0;
     if (updates.isUserGenerated !== undefined) valuesToUpdate.isUserGenerated = updates.isUserGenerated ? 1 : 0;

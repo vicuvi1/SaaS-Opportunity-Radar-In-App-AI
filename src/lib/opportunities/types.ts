@@ -128,6 +128,15 @@ export type Opportunity = {
   sources: OpportunitySource[];
   notes: OpportunityNote[];
 
+  // Market Crowdedness & Intelligence (13-Pass Deep Research)
+  marketCrowdedness?: "LOW" | "MEDIUM" | "HIGH" | "SATURATED";
+  marketCrowdednessScore?: number; // 0-100 (0 = empty, 100 = saturated red ocean)
+  whyItCouldWork?: string[];
+  whyItMightNotWork?: string[];
+  whatWeStillDontKnow?: string[];
+  nextValidationSteps?: string[];
+  lastDeepResearchAt?: string;
+
   // Meta & State
   status: OpportunityStatus;
   isNewDiscovery?: boolean; // true = held in Daily New Discoveries Inbox

@@ -6,6 +6,9 @@ import { resolveOpenRouterModel } from "@/lib/ai/openrouter";
 import { opportunityStore } from "@/lib/opportunities/store";
 import type { Opportunity, EvidenceGrading } from "@/lib/opportunities/types";
 import { exportOpportunityToObsidian, getObsidianFilePath } from "@/lib/obsidian/export";
+import { adapterRegistry } from "@/lib/research/adapters/registry";
+import { db } from "@/lib/db";
+import { opportunitySourcesTable } from "@/lib/db/schema";
 
 const REPORTS_DIR = path.join(process.cwd(), "data", "reports");
 
@@ -16,29 +19,47 @@ function ensureReportsDir(): void {
 }
 
 export const deepResearchSchema = z.object({
-  // 1. Problem analysis & severity
-  problemAnalysis: z.object({
+  // Pass 1: Problem Validation
+  problemValidation: z.object({
     rootCause: z.string(),
     severityRating: z.number().min(1).max(10),
     severityExplanation: z.string(),
     affectedWorkflows: z.array(z.string()),
+    frequencyAndRecurrence: z.string(),
+    emotionalIntensity: z.enum([
+      "MILD_ANNOYANCE",
+      "MODERATE_FRICTION",
+      "ACUTE_PAIN",
+      "MISSION_CRITICAL",
+    ]),
   }),
 
-  // 2. Current workarounds & friction
-  currentWorkarounds: z.object({
-    existingProcesses: z.array(z.string()),
+  // Pass 2: Target Customer & ICP
+  targetCustomer: z.object({
+    primaryCustomerProfile: z.string(),
+    buyingPersona: z.string(),
+    teamSizeAndRevenueRange: z.string(),
+    decisionMakerVsUser: z.string(),
+    churnRiskFactors: z.array(z.string()),
+  }),
+
+  // Pass 3: Current Workflow & Friction
+  currentWorkflow: z.object({
+    stepByStepWorkflow: z.array(z.string()),
     hoursLostPerWeek: z.string(),
-    failurePoints: z.array(z.string()),
+    toolsGluedTogether: z.array(z.string()),
+    criticalFailurePoints: z.array(z.string()),
   }),
 
-  // 3. Market size & economic impact
-  marketEconomics: z.object({
-    targetAudienceCountEstimate: z.string(),
-    estimatedEconomicLossPerYear: z.string(),
-    marketSizeExplanation: z.string(),
+  // Pass 4: Existing Solutions & Why They Fail
+  existingSolutions: z.object({
+    incumbentTools: z.array(z.string()),
+    openSourceAlternatives: z.array(z.string()),
+    manualWorkarounds: z.array(z.string()),
+    whyUsersSwitchOrComplain: z.array(z.string()),
   }),
 
-  // 4. Competitor landscape
+  // Pass 5: Competitor Landscape
   competitors: z.array(
     z.object({
       name: z.string(),
@@ -50,8 +71,9 @@ export const deepResearchSchema = z.object({
     }),
   ),
 
-  // 5. Pricing & willingness to pay
+  // Pass 6: Pricing & Willingness to Pay
   pricingStrategy: z.object({
+    existingMarketPricePoints: z.string(),
     suggestedModel: z.string(),
     tierRecommendations: z.array(
       z.object({
@@ -60,52 +82,75 @@ export const deepResearchSchema = z.object({
         targetSubsegment: z.string(),
       }),
     ),
+    roiJustification: z.string(),
     willingnessToPaySignals: z.string(),
   }),
 
-  // 6. Feature gaps & feasibility
-  feasibility: z.object({
-    technicalComplexity: z.enum(["LOW", "MEDIUM", "HIGH"]),
-    coreTechnicalRisks: z.array(z.string()),
-    differentiationFactor: z.string(),
+  // Pass 7: Demand Evidence
+  demandEvidence: z.object({
+    demandSignalsSummary: z.string(),
+    recurringSearchPhrases: z.array(z.string()),
+    communityDiscussions: z.array(z.string()),
+    featureRequestsObserved: z.array(z.string()),
   }),
 
-  // 7. Distribution channels
-  distribution: z.object({
-    primaryAcquisitionChannels: z.array(z.string()),
-    communityHangouts: z.array(z.string()),
-    viralOrLoopMechanisms: z.string(),
+  // Pass 8: Commercial Evidence & Buyer Intent
+  commercialEvidence: z.object({
+    budgetIndicators: z.string(),
+    switchingFrictionNotes: z.string(),
+    urgencyLevel: z.enum(["HIGH", "MEDIUM", "LOW"]),
+    commercialSignals: z.array(z.string()),
   }),
 
-  // 8. AI leverage
+  // Pass 9: Market Crowdedness & Saturation
+  marketCrowdedness: z.object({
+    competitiveDensity: z.enum(["LOW", "MEDIUM", "HIGH", "SATURATED"]),
+    crowdednessScore: z.number().min(0).max(100), // 0 = empty blue ocean, 100 = saturated red ocean
+    fundedCompetitorsCountEstimate: z.string(),
+    barrierToEntry: z.enum(["LOW", "MEDIUM", "HIGH"]),
+    crowdednessExplanation: z.string(),
+  }),
+
+  // Pass 10: Whitespace & Differentiation Wedge
+  whitespaceWedge: z.object({
+    underservedSubsegment: z.string(),
+    overlookedFeatures: z.array(z.string()),
+    positioningWedge: z.string(),
+    unfairAdvantageOrMoat: z.string(),
+  }),
+
+  // Pass 11: AI & Automation Leverage
   aiLeverage: z.object({
     whereAiProvides10xSpeedup: z.string(),
     whyNotPossibleYearsAgo: z.string(),
+    workflowsAutomatedEndToEnd: z.array(z.string()),
     llmCapabilitiesUsed: z.array(z.string()),
+    aiWrapperRisk: z.enum([
+      "HIGH_WRAPPER_RISK",
+      "MODERATE_DEFENSIBILITY",
+      "STRONG_DEEP_AI_MOAT",
+    ]),
   }),
 
-  // 9. MVP scope
-  mvpFeatures: z.array(z.string()),
-
-  // 10. Anti-scope (Excluded features)
-  excludedFeatures: z.array(z.string()),
-
-  // 11. Execution risks
-  executionRisks: z.array(
-    z.object({
-      risk: z.string(),
-      mitigation: z.string(),
-    }),
-  ),
-
-  // 12. Validation experiments
-  validationPlan: z.object({
-    smokeTests: z.array(z.string()),
-    customerInterviewQuestions: z.array(z.string()),
-    passFailMetrics: z.string(),
+  // Pass 12: Counter-Evidence & Devil's Advocate
+  devilsAdvocate: z.object({
+    whyItCouldWork: z.array(z.string()),
+    whyItMightNotWork: z.array(z.string()),
+    whyIncumbentsHaventBuiltItYet: z.string(),
+    fatalFlawAnalysis: z.string(),
+    regulatoryOrPlatformRisks: z.array(z.string()),
   }),
 
-  // 13. Evidence audit & fact classification
+  // Pass 13: Final Synthesis & Research Gaps
+  synthesis: z.object({
+    overallViabilityScore: z.number().min(0).max(100),
+    aiRecommendation: z.enum(["BUILD", "VALIDATE_FURTHER", "PIVOT", "DO_NOT_BUILD"]),
+    recommendationReasoning: z.string(),
+    whatWeStillDontKnow: z.array(z.string()),
+    nextValidationSteps: z.array(z.string()),
+  }),
+
+  // Strict Evidence Audit across all claims
   evidenceAudit: z.array(
     z.object({
       claim: z.string(),
@@ -121,16 +166,16 @@ export const deepResearchSchema = z.object({
     }),
   ),
 
-  // Summary recommendation
-  aiRecommendation: z.enum(["BUILD", "VALIDATE_FURTHER", "PIVOT", "DO_NOT_BUILD"]),
-  recommendationReasoning: z.string(),
-  revisedScore: z.number().min(0).max(100),
+  // MVP & Anti-scope
+  mvpFeatures: z.array(z.string()),
+  excludedFeatures: z.array(z.string()),
+  distributionChannels: z.array(z.string()),
 });
 
 export type DeepResearchResult = z.infer<typeof deepResearchSchema>;
 
 /**
- * Runs the full 13-dimension Deep Research investigation on an opportunity
+ * Runs the full 13-pass Deep Research investigation with live multi-source signal enrichment
  */
 export async function runDeepResearch(
   opportunityId: string,
@@ -146,13 +191,56 @@ export async function runDeepResearch(
     throw new Error(`Opportunity with ID "${opportunityId}" not found`);
   }
 
-  console.log(`[deep-research] Starting 13-dimension investigation on: "${opp.title}"`);
+  console.log(`[deep-research] Initiating 13-Pass Deep Research on: "${opp.title}"`);
+
+  // 1. GATHER LIVE SIGNALS FROM ACTIVE ADAPTERS
+  let liveSignalsContext = "No live signals available.";
+  let liveFetchedSources: Array<{
+    id: string;
+    title: string;
+    url: string;
+    sourceType: string;
+    date: string;
+    summary: string;
+    grading: EvidenceGrading;
+  }> = [];
+
+  try {
+    const liveQuery = `${opp.title} ${opp.industry} competitors alternative problems`;
+    console.log(`[deep-research] Querying active adapters for live enrichment: "${liveQuery}"`);
+    const { signals: liveSignals } = await adapterRegistry.searchAllSources(liveQuery, {
+      limit: 12,
+    });
+
+    if (liveSignals.length > 0) {
+      console.log(`[deep-research] Gathered ${liveSignals.length} live research signals.`);
+      liveSignalsContext = liveSignals
+        .slice(0, 10)
+        .map(
+          (s, i) =>
+            `[Signal ${i + 1}] Source: ${s.sourceType.toUpperCase()} (${s.sourceName}) | Title: ${s.title}\nURL: ${s.url}\nContent: ${s.content.slice(0, 300)}\nPain: ${s.painSignals.join(", ") || "N/A"} | Competitors: ${s.competitorSignals.join(", ") || "N/A"}`,
+        )
+        .join("\n\n");
+
+      liveFetchedSources = liveSignals.map((s) => ({
+        id: s.id,
+        title: s.title,
+        url: s.url,
+        sourceType: s.sourceType,
+        date: s.publishedAt ? s.publishedAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        summary: s.content.slice(0, 200),
+        grading: "SOURCE-BASED CLAIM" as EvidenceGrading,
+      }));
+    }
+  } catch (liveErr) {
+    console.warn("[deep-research] Failed to gather live signals, proceeding with existing knowledge:", liveErr);
+  }
 
   const { model, modelName } = resolveOpenRouterModel("DEEP");
   console.log(`[deep-research] Using deep model: ${modelName}`);
 
-  const prompt = `You are a world-class principal technology investor, product strategist, and B2B SaaS auditor.
-Perform an exhaustive, 13-dimension commercial and technical deep-research audit on this opportunity:
+  const prompt = `You are an elite principal technology investor, market intelligence analyst, and SaaS product auditor.
+Perform an exhaustive 13-PASS commercial and technical deep-research audit on this opportunity:
 
 === OPPORTUNITY PROFILE ===
 ID: ${opp.id}
@@ -165,31 +253,36 @@ Current Solutions: ${opp.currentSolutions || "Not specified"}
 Market Gap: ${opp.marketGap || "Not specified"}
 AI Fit: ${opp.aiFit}
 Existing Score: ${opp.researchScore}/100
-Sources count: ${opp.sources?.length || 0}
 ===========================
 
-CONDUCT RIGOROUS RESEARCH ACROSS ALL 13 DIMENSIONS:
-1. Problem analysis & severity (root cause, severity 1-10)
-2. Current workarounds & friction (hours lost, failure points)
-3. Market size & economic impact (TAM estimate, financial loss)
-4. Competitor landscape (names, pricing, strengths/weaknesses, gaps)
-5. Pricing strategy & willingness to pay (tiers, price points)
-6. Feature gaps & technical feasibility
-7. Distribution channels & community hangouts
-8. AI leverage (why 10x now vs 3 years ago)
-9. MVP scope (3-5 core essentials only)
-10. Anti-scope (excluded features - what NOT to build in v1)
-11. Execution risks & concrete mitigations
-12. Validation plan (smoke tests, customer interview questions, pass/fail metrics)
-13. Strict Evidence Audit:
-    Every single key claim MUST be graded strictly as one of:
-    - "FACT" (verifiable public data or official statistics)
-    - "SOURCE-BASED CLAIM" (reported by users or community sources)
-    - "INFERENCE" (logical deduction from observed patterns)
-    - "HYPOTHESIS" (unproven assumption needing validation)
-    - "UNKNOWN" (insufficient data)
+=== RECENT LIVE SIGNALS FROM MARKET RESEARCH ADAPTERS ===
+${liveSignalsContext}
+=========================================================
 
-Never hallucinate evidence. If something is an inference or hypothesis, mark it as such.`;
+CONDUCT RIGOROUS RESEARCH ACROSS ALL 13 PASSES:
+Pass 1: Problem Validation (Root cause analysis, severity rating 1-10, affected workflows, frequency/recurrence, emotional intensity of complaints)
+Pass 2: Target Customer & ICP (Primary customer profile, buying persona, team size/revenue range, decision maker vs daily user, churn risk factors)
+Pass 3: Current Workflow & Friction (Existing processes step-by-step, hours lost per week/month, tools currently glued together, critical failure points)
+Pass 4: Existing Solutions & Why They Fail (Incumbent tools, open-source alternatives, spreadsheet/manual workarounds, why users switch or complain)
+Pass 5: Competitor Landscape (Direct competitors with URLs/pricing, strengths, weaknesses, vulnerable market gap)
+Pass 6: Pricing & Willingness to Pay (Existing market price points, suggested pricing model, tier recommendations, ROI justification, evidence of willingness to pay)
+Pass 7: Demand Evidence (Community threads, search phrases, recurring questions, feature requests observed)
+Pass 8: Commercial Evidence & Buyer Intent (Mentions of budgets, switching costs, contract friction, urgency level)
+Pass 9: Market Crowdedness & Saturation (Competitive density: LOW/MEDIUM/HIGH/SATURATED, crowdednessScore 0-100, funded competitors, barrier to entry)
+Pass 10: Whitespace & Differentiation Wedge (Underserved subsegments, overlooked features, specific positioning wedge, unfair advantage)
+Pass 11: AI & Automation Leverage (Where AI provides real 10x leverage vs superficial wrapper, workflows automated end-to-end, LLM capabilities, wrapper risk level)
+Pass 12: Counter-Evidence & Devil's Advocate (Balanced critique: 3-5 why it could work, 3-5 why it might not work / fatal flaws, why incumbents haven't built it, regulatory/platform risks)
+Pass 13: Final Synthesis & Research Gaps (Overall viability score 0-100, recommendation BUILD / VALIDATE_FURTHER / PIVOT / DO_NOT_BUILD, critical unanswered questions, 3-5 immediate next validation actions)
+
+Strict Evidence Audit:
+Every single key factual claim MUST be graded strictly as one of:
+- "FACT" (verifiable public data or official statistics)
+- "SOURCE-BASED CLAIM" (reported by users or community sources)
+- "INFERENCE" (logical deduction from observed patterns)
+- "HYPOTHESIS" (unproven assumption needing validation)
+- "UNKNOWN" (insufficient data)
+
+Tone: Objective, investor-grade, neutral, no hype, no automated "Winner" declaration.`;
 
   let research: DeepResearchResult;
 
@@ -213,103 +306,180 @@ Never hallucinate evidence. If something is an inference or hypothesis, mark it 
     research = fallbackRes.object;
   }
 
-  // Format comprehensive Markdown report
+  // Format comprehensive Markdown report covering all 13 passes
   const now = new Date().toISOString();
-  const reportMarkdown = `# Deep Research Report: ${opp.title}
+  const reportMarkdown = `# 13-Pass Deep Research Intelligence Report: ${opp.title}
 
 > **Date**: ${now.slice(0, 10)}  
-> **Target Customer**: ${opp.targetCustomer} | **Industry**: ${opp.industry}  
-> **AI Recommendation**: **${research.aiRecommendation}** (Score: ${research.revisedScore}/100)  
+> **Target Customer**: ${research.targetCustomer.primaryCustomerProfile} | **Industry**: ${opp.industry}  
+> **Viability Score**: **${research.synthesis.overallViabilityScore}/100** | **Crowdedness**: **${research.marketCrowdedness.competitiveDensity}** (${research.marketCrowdedness.crowdednessScore}/100)  
+> **AI Recommendation**: **${research.synthesis.aiRecommendation}**  
 > **Model Used**: ${modelName}  
 
 ---
 
-## 1. Problem Analysis & Severity
-- **Root Cause**: ${research.problemAnalysis.rootCause}
-- **Severity Rating**: **${research.problemAnalysis.severityRating} / 10**
-- **Analysis**: ${research.problemAnalysis.severityExplanation}
+## Pass 1: Problem Validation & Severity
+- **Root Cause**: ${research.problemValidation.rootCause}
+- **Severity Rating**: **${research.problemValidation.severityRating} / 10** (${research.problemValidation.emotionalIntensity})
+- **Frequency / Recurrence**: ${research.problemValidation.frequencyAndRecurrence}
+- **Analysis**: ${research.problemValidation.severityExplanation}
 - **Affected Workflows**:
-${research.problemAnalysis.affectedWorkflows.map((w) => `  - ${w}`).join("\n")}
+${research.problemValidation.affectedWorkflows.map((w) => `  - ${w}`).join("\n")}
 
-## 2. Current Workarounds & Friction
-- **Hours Lost**: ${research.currentWorkarounds.hoursLostPerWeek}
-- **Existing Workarounds**:
-${research.currentWorkarounds.existingProcesses.map((p) => `  - ${p}`).join("\n")}
+---
+
+## Pass 2: Target Customer Profile & ICP
+- **Primary Profile**: ${research.targetCustomer.primaryCustomerProfile}
+- **Buying Persona**: ${research.targetCustomer.buyingPersona}
+- **Target Revenue & Org Size**: ${research.targetCustomer.teamSizeAndRevenueRange}
+- **Decision Maker vs Daily User**: ${research.targetCustomer.decisionMakerVsUser}
+- **Churn Risk Factors**:
+${research.targetCustomer.churnRiskFactors.map((c) => `  - ⚠️ ${c}`).join("\n")}
+
+---
+
+## Pass 3: Current Workflow & Friction Points
+- **Hours Lost**: ${research.currentWorkflow.hoursLostPerWeek}
+- **Tools Currently Glued Together**: ${research.currentWorkflow.toolsGluedTogether.join(", ")}
+- **Step-by-Step Workflow**:
+${research.currentWorkflow.stepByStepWorkflow.map((step, i) => `  ${i + 1}. ${step}`).join("\n")}
 - **Critical Failure Points**:
-${research.currentWorkarounds.failurePoints.map((f) => `  - ${f}`).join("\n")}
+${research.currentWorkflow.criticalFailurePoints.map((f) => `  - ❌ ${f}`).join("\n")}
 
-## 3. Market Size & Economic Impact
-- **Audience Estimate**: ${research.marketEconomics.targetAudienceCountEstimate}
-- **Economic Loss**: ${research.marketEconomics.estimatedEconomicLossPerYear}
-- **Dynamics**: ${research.marketEconomics.marketSizeExplanation}
+---
 
-## 4. Competitor Landscape
+## Pass 4: Existing Solutions & Why They Fail
+- **Incumbent Tools**: ${research.existingSolutions.incumbentTools.join(", ")}
+- **Open-Source Alternatives**: ${research.existingSolutions.openSourceAlternatives.join(", ") || "None notable"}
+- **Manual Workarounds**: ${research.existingSolutions.manualWorkarounds.join("; ")}
+- **Why Users Complain & Look to Switch**:
+${research.existingSolutions.whyUsersSwitchOrComplain.map((reason) => `  - ${reason}`).join("\n")}
+
+---
+
+## Pass 5: Competitor Intelligence
 ${research.competitors
   .map(
     (c) => `### ${c.name}
+- **Website/URL**: ${c.url || "N/A"}
 - **Pricing**: ${c.pricing || "N/A"}
 - **Strengths**: ${c.strengths.join(", ")}
 - **Weaknesses**: ${c.weaknesses.join(", ")}
-- **Market Gap**: ${c.gap}`,
+- **Vulnerable Gap**: ${c.gap}`,
   )
   .join("\n\n")}
 
-## 5. Pricing Strategy & Willingness to Pay
-- **Model**: ${research.pricingStrategy.suggestedModel}
-- **Willingness to Pay**: ${research.pricingStrategy.willingnessToPaySignals}
+---
+
+## Pass 6: Pricing & Willingness to Pay
+- **Suggested Model**: ${research.pricingStrategy.suggestedModel}
+- **Benchmark Market Rates**: ${research.pricingStrategy.existingMarketPricePoints}
+- **ROI Justification**: ${research.pricingStrategy.roiJustification}
+- **Willingness to Pay Signals**: ${research.pricingStrategy.willingnessToPaySignals}
 - **Recommended Tiers**:
 ${research.pricingStrategy.tierRecommendations
   .map((t) => `  - **${t.name}**: ${t.price} (${t.targetSubsegment})`)
   .join("\n")}
 
-## 6. Technical Feasibility & Differentiation
-- **Complexity**: ${research.feasibility.technicalComplexity}
-- **Key Differentiation**: ${research.feasibility.differentiationFactor}
-- **Technical Risks**:
-${research.feasibility.coreTechnicalRisks.map((r) => `  - ${r}`).join("\n")}
+---
 
-## 7. Distribution & Acquisition Strategy
-- **Primary Channels**:
-${research.distribution.primaryAcquisitionChannels.map((c) => `  - ${c}`).join("\n")}
-- **Community Hangouts**:
-${research.distribution.communityHangouts.map((h) => `  - ${h}`).join("\n")}
-- **Growth Loop**: ${research.distribution.viralOrLoopMechanisms}
+## Pass 7: Demand Evidence
+- **Summary**: ${research.demandEvidence.demandSignalsSummary}
+- **Recurring Search Phrasings**:
+${research.demandEvidence.recurringSearchPhrases.map((p) => `  - "${p}"`).join("\n")}
+- **Observed Community Discussions**:
+${research.demandEvidence.communityDiscussions.map((d) => `  - ${d}`).join("\n")}
+- **Feature Requests**:
+${research.demandEvidence.featureRequestsObserved.map((r) => `  - ${r}`).join("\n")}
 
-## 8. AI Leverage & Automation Advantage
-- **10x Advantage**: ${research.aiLeverage.whereAiProvides10xSpeedup}
-- **Why Now**: ${research.aiLeverage.whyNotPossibleYearsAgo}
-- **Capabilities**: ${research.aiLeverage.llmCapabilitiesUsed.join(", ")}
+---
 
-## 9. MVP Scope (What to Build First)
+## Pass 8: Commercial Evidence & Buyer Intent
+- **Urgency Level**: **${research.commercialEvidence.urgencyLevel}**
+- **Budget Indicators**: ${research.commercialEvidence.budgetIndicators}
+- **Switching Friction**: ${research.commercialEvidence.switchingFrictionNotes}
+- **Commercial Signals**:
+${research.commercialEvidence.commercialSignals.map((s) => `  - 💰 ${s}`).join("\n")}
+
+---
+
+## Pass 9: Market Crowdedness & Saturation
+- **Competitive Density**: **${research.marketCrowdedness.competitiveDensity}**
+- **Crowdedness Score**: **${research.marketCrowdedness.crowdednessScore} / 100**
+- **Barrier to Entry**: ${research.marketCrowdedness.barrierToEntry}
+- **Funded Competitors**: ${research.marketCrowdedness.fundedCompetitorsCountEstimate}
+- **Saturation Assessment**: ${research.marketCrowdedness.crowdednessExplanation}
+
+---
+
+## Pass 10: Whitespace & Differentiation Wedge
+- **Underserved Subsegment**: ${research.whitespaceWedge.underservedSubsegment}
+- **Positioning Wedge**: ${research.whitespaceWedge.positioningWedge}
+- **Overlooked Feature Gaps**:
+${research.whitespaceWedge.overlookedFeatures.map((f) => `  - 🎯 ${f}`).join("\n")}
+- **Unfair Advantage / Moat**: ${research.whitespaceWedge.unfairAdvantageOrMoat}
+
+---
+
+## Pass 11: AI & Automation Leverage
+- **Where AI Delivers 10x Advantage**: ${research.aiLeverage.whereAiProvides10xSpeedup}
+- **Why Not Feasible 3 Years Ago**: ${research.aiLeverage.whyNotPossibleYearsAgo}
+- **Wrapper Defensibility Level**: **${research.aiLeverage.aiWrapperRisk}**
+- **Workflows Automated End-to-End**:
+${research.aiLeverage.workflowsAutomatedEndToEnd.map((w) => `  - ⚡ ${w}`).join("\n")}
+- **Core LLM Capabilities Used**: ${research.aiLeverage.llmCapabilitiesUsed.join(", ")}
+
+---
+
+## Pass 12: Counter-Evidence & Devil's Advocate (Balanced Audit)
+
+### 🟢 Why It Could Work
+${research.devilsAdvocate.whyItCouldWork.map((w) => `- ${w}`).join("\n")}
+
+### 🔴 Why It Might Not Work (Fatal Flaws & Failure Modes)
+${research.devilsAdvocate.whyItMightNotWork.map((f) => `- ⚠️ ${f}`).join("\n")}
+
+- **Why Incumbents Haven't Built It Yet**: ${research.devilsAdvocate.whyIncumbentsHaventBuiltItYet}
+- **Fatal Flaw Analysis**: ${research.devilsAdvocate.fatalFlawAnalysis}
+- **Regulatory / Platform Headwinds**:
+${research.devilsAdvocate.regulatoryOrPlatformRisks.map((r) => `  - 🛡️ ${r}`).join("\n")}
+
+---
+
+## Pass 13: Final Synthesis & Research Gaps
+- **Viability Score**: **${research.synthesis.overallViabilityScore} / 100**
+- **Recommendation**: **${research.synthesis.aiRecommendation}**
+- **Strategic Summary**: ${research.synthesis.recommendationReasoning}
+
+### ❓ What We Still Don't Know (Critical Knowledge Gaps)
+${research.synthesis.whatWeStillDontKnow.map((gap) => `- [ ] ${gap}`).join("\n")}
+
+### 🚀 Immediate Next Validation Steps (3-5 Actions)
+${research.synthesis.nextValidationSteps.map((step, i) => `${i + 1}. **${step}**`).join("\n")}
+
+---
+
+## Appendix A: MVP Scope vs Anti-Scope
+### V1 MVP Features
 ${research.mvpFeatures.map((f, i) => `${i + 1}. **${f}**`).join("\n")}
 
-## 10. Anti-Scope (What NOT to Build in V1)
+### Excluded From V1 (Anti-Scope)
 ${research.excludedFeatures.map((f) => `- ❌ ${f}`).join("\n")}
 
-## 11. Execution Risks & Mitigations
-| Risk | Mitigation |
-|------|------------|
-${research.executionRisks.map((r) => `| ${r.risk} | ${r.mitigation} |`).join("\n")}
+### Recommended Distribution Channels
+${research.distributionChannels.map((c) => `- 📣 ${c}`).join("\n")}
 
-## 12. Validation Plan
-- **Smoke Tests**:
-${research.validationPlan.smokeTests.map((s) => `  - ${s}`).join("\n")}
-- **Customer Interview Questions**:
-${research.validationPlan.customerInterviewQuestions.map((q) => `  - "${q}"`).join("\n")}
-- **Pass/Fail Criteria**: ${research.validationPlan.passFailMetrics}
+---
 
-## 13. Evidence Audit & Claim Verification
-| Claim | Evidence Grading | Source | Confidence Note |
-|-------|------------------|--------|-----------------|
+## Appendix B: Evidence Audit & Claim Verification
+| Claim | Evidence Grading | Source URL / Proof | Confidence Note |
+|-------|------------------|---------------------|-----------------|
 ${research.evidenceAudit
   .map(
     (e) =>
-      `| ${e.claim.slice(0, 60)}... | \`${e.grading}\` | ${e.sourceUrl || "Observed"} | ${e.confidenceNote} |`,
+      `| ${e.claim.slice(0, 65).replace(/\|/g, "/")} | \`${e.grading}\` | ${e.sourceUrl || "Observed"} | ${e.confidenceNote.replace(/\|/g, "/")} |`,
   )
   .join("\n")}
-
----
-**Recommendation Summary**: ${research.recommendationReasoning}
 `;
 
   // Write report to ./data/reports/
@@ -319,43 +489,74 @@ ${research.evidenceAudit
   const reportPath = path.join(REPORTS_DIR, reportFileName);
   fs.writeFileSync(reportPath, reportMarkdown, "utf-8");
 
-  // Update opportunity record in SQLite with newly discovered intelligence
-  const updatedSources = [
+  // Merge live signals and audit claims into opportunity sources
+  const auditSources = research.evidenceAudit.map((ea, i) => ({
+    id: `audit-src-${Date.now().toString(36)}-${i}`,
+    title: ea.claim.slice(0, 50),
+    url: ea.sourceUrl || "",
+    sourceType: "deep-research",
+    grading: ea.grading as EvidenceGrading,
+    summary: ea.confidenceNote,
+    date: now.slice(0, 10),
+  }));
+
+  const allMergedSources = [
     ...(opp.sources || []),
-    ...research.evidenceAudit.map((ea, i) => ({
-      id: `audit-src-${Date.now().toString(36)}-${i}`,
-      title: ea.claim.slice(0, 50),
-      url: ea.sourceUrl || "",
-      sourceType: "deep-research",
-      grading: ea.grading as EvidenceGrading,
-      summary: ea.confidenceNote,
-      date: now.slice(0, 10),
-    })),
+    ...liveFetchedSources,
+    ...auditSources,
   ];
 
+  // Store in opportunitySourcesTable as well
+  try {
+    for (const s of [...liveFetchedSources, ...auditSources]) {
+      db.insert(opportunitySourcesTable)
+        .values({
+          id: s.id,
+          opportunityId: opp.id,
+          title: s.title,
+          url: s.url,
+          sourceType: s.sourceType,
+          date: s.date,
+          summary: s.summary,
+          claimSupported: s.title,
+          createdAt: now,
+        })
+        .run();
+    }
+  } catch (srcInsertErr) {
+    console.warn("[deep-research] Notice writing to opportunitySourcesTable:", srcInsertErr);
+  }
+
+  // Update opportunity record in SQLite with newly discovered intelligence
   const updatedOpp = await opportunityStore.update(opp.id, {
-    researchScore: research.revisedScore,
-    currentWorkflow: research.currentWorkarounds.existingProcesses.join("; "),
+    researchScore: research.synthesis.overallViabilityScore,
+    marketCrowdedness: research.marketCrowdedness.competitiveDensity,
+    marketCrowdednessScore: research.marketCrowdedness.crowdednessScore,
+    currentWorkflow: research.currentWorkflow.stepByStepWorkflow.join(" -> "),
     currentSolutions: research.competitors.map((c) => c.name).join(", "),
-    economicImpact: research.marketEconomics.estimatedEconomicLossPerYear,
-    marketSize: research.marketEconomics.targetAudienceCountEstimate,
-    marketGap: research.feasibility.differentiationFactor,
+    economicImpact: research.problemValidation.severityExplanation,
+    marketSize: research.targetCustomer.teamSizeAndRevenueRange,
+    marketGap: research.whitespaceWedge.positioningWedge,
     aiOpportunity: research.aiLeverage.whereAiProvides10xSpeedup,
     monetizationModel: research.pricingStrategy.suggestedModel,
     pricingIdea: research.pricingStrategy.tierRecommendations.map((t) => `${t.name}: ${t.price}`).join(" | "),
-    distributionChannels: research.distribution.primaryAcquisitionChannels,
+    distributionChannels: research.distributionChannels,
     mvpFeatures: research.mvpFeatures,
     excludedFeatures: research.excludedFeatures,
-    executionRisks: research.executionRisks,
     competitors: research.competitors,
-    sources: updatedSources,
+    sources: allMergedSources,
+    whyItCouldWork: research.devilsAdvocate.whyItCouldWork,
+    whyItMightNotWork: research.devilsAdvocate.whyItMightNotWork,
+    whatWeStillDontKnow: research.synthesis.whatWeStillDontKnow,
+    nextValidationSteps: research.synthesis.nextValidationSteps,
+    lastDeepResearchAt: now,
     validation: {
       interviewsCount: opp.validation?.interviewsCount || 0,
       interestedCustomersCount: opp.validation?.interestedCustomersCount || 0,
       waitlistCount: opp.validation?.waitlistCount || 0,
-      assumptions: research.validationPlan.smokeTests,
-      risks: research.executionRisks.map((r) => r.risk),
-      validationQuestions: research.validationPlan.customerInterviewQuestions,
+      assumptions: research.devilsAdvocate.whyItCouldWork,
+      risks: research.devilsAdvocate.whyItMightNotWork,
+      validationQuestions: research.synthesis.nextValidationSteps,
     },
   });
 
@@ -382,3 +583,4 @@ ${research.evidenceAudit
     reportPath,
   };
 }
+

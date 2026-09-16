@@ -45,6 +45,9 @@ import {
   HelpCircle,
   TrendingUp,
   MessageSquare,
+  ShieldCheck,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { exportOpportunityToObsidian } from "@/lib/obsidian/export";
 import { CopilotChat } from "@/components/copilot/copilot-chat";
@@ -123,6 +126,54 @@ export function OpportunityDetailDialog({
   // AI Copilot & Research Modal state
   const [chatOpen, setChatOpen] = useState(false);
   const [researchModalOpen, setResearchModalOpen] = useState(false);
+
+  // Claim verification state
+  const [verifyingClaimId, setVerifyingClaimId] = useState<string | null>(null);
+  const [verificationResults, setVerificationResults] = useState<
+    Record<
+      string,
+      {
+        status: string;
+        grading: string;
+        explanation: string;
+        confidenceScore: number;
+        supportingEvidence: string[];
+        contradictingEvidence: string[];
+      }
+    >
+  >({});
+  const [customClaimToVerify, setCustomClaimToVerify] = useState("");
+
+  async function handleVerifyClaim(claimText: string, claimKey: string) {
+    if (!claimText.trim() || !opp) return;
+    setVerifyingClaimId(claimKey);
+    try {
+      const res = await fetch(`/api/opportunities/${opp.id}/verify-claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claim: claimText }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVerificationResults((prev) => ({
+          ...prev,
+          [claimKey]: data.verification,
+        }));
+        // Reload opportunity if sources were added
+        const refreshRes = await fetch(`/api/opportunities/${opp.id}`);
+        if (refreshRes.ok) {
+          const refreshed = await refreshRes.json();
+          if (refreshed) {
+            setOpp(refreshed);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[verify-claim] Error verifying claim:", err);
+    } finally {
+      setVerifyingClaimId(null);
+    }
+  }
 
   useEffect(() => {
     setOpp(opportunity);
@@ -556,6 +607,97 @@ export function OpportunityDetailDialog({
                   className="text-xs"
                 />
               </div>
+
+              {/* DEVIL'S ADVOCATE & 13-PASS INTELLIGENCE */}
+              {(Boolean(opp.whyItCouldWork?.length) || Boolean(opp.whyItMightNotWork?.length) || Boolean(opp.marketCrowdedness)) && (
+                <div className="rounded-xl border border-border/80 bg-card p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                      <ShieldCheck className="size-4 text-cyan-400" />
+                      13-Pass Deep Intelligence &amp; Devil&apos;s Advocate
+                    </span>
+                    {opp.marketCrowdedness && (
+                      <Badge variant="outline" className="text-xs font-mono">
+                        Crowdedness: {opp.marketCrowdedness} ({opp.marketCrowdednessScore ?? 50}/100)
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Why It Could Work */}
+                    <div className="rounded-lg border border-emerald-800/40 bg-emerald-950/20 p-3 space-y-1.5">
+                      <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="size-3.5" /> Why It Could Work
+                      </span>
+                      <ul className="text-xs space-y-1 text-emerald-200/90">
+                        {opp.whyItCouldWork && opp.whyItCouldWork.length > 0 ? (
+                          opp.whyItCouldWork.map((point, i) => (
+                            <li key={i} className="flex items-start gap-1.5">
+                              <span className="text-emerald-400 font-bold">•</span>
+                              <span>{point}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="text-muted-foreground italic">Run 13-pass deep research to evaluate.</li>
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Why It Might Not Work */}
+                    <div className="rounded-lg border border-rose-800/40 bg-rose-950/20 p-3 space-y-1.5">
+                      <span className="text-xs font-bold text-rose-400 flex items-center gap-1">
+                        <AlertTriangle className="size-3.5" /> Why It Might Not Work (Fatal Flaws)
+                      </span>
+                      <ul className="text-xs space-y-1 text-rose-200/90">
+                        {opp.whyItMightNotWork && opp.whyItMightNotWork.length > 0 ? (
+                          opp.whyItMightNotWork.map((point, i) => (
+                            <li key={i} className="flex items-start gap-1.5">
+                              <span className="text-rose-400 font-bold">•</span>
+                              <span>{point}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="text-muted-foreground italic">Run 13-pass deep research to evaluate.</li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* What We Still Don't Know */}
+                  {opp.whatWeStillDontKnow && opp.whatWeStillDontKnow.length > 0 && (
+                    <div className="rounded-lg border border-amber-800/30 bg-amber-950/15 p-3 space-y-1.5">
+                      <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                        <HelpCircle className="size-3.5" /> What We Still Don&apos;t Know (Critical Gaps)
+                      </span>
+                      <ul className="text-xs space-y-1 text-muted-foreground">
+                        {opp.whatWeStillDontKnow.map((gap, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <span className="text-amber-400 font-bold">?</span>
+                            <span>{gap}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Next Validation Steps */}
+                  {opp.nextValidationSteps && opp.nextValidationSteps.length > 0 && (
+                    <div className="rounded-lg border border-blue-800/30 bg-blue-950/15 p-3 space-y-1.5">
+                      <span className="text-xs font-bold text-blue-400 flex items-center gap-1">
+                        <TrendingUp className="size-3.5" /> Next Concrete Validation Experiments
+                      </span>
+                      <ol className="text-xs space-y-1 text-muted-foreground">
+                        {opp.nextValidationSteps.map((step, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <span className="text-blue-400 font-bold">{i + 1}.</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
             </TabsContent>
 
             {/* ── TAB 2: RESEARCH SCORE BREAKDOWN ───────────────────────── */}
@@ -862,6 +1004,91 @@ export function OpportunityDetailDialog({
                 </Button>
               </div>
 
+              {/* LIVE CLAIM FACT-CHECKER DRAWER */}
+              <div className="rounded-xl border border-cyan-800/40 bg-cyan-950/20 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheck className="size-3.5" /> Live Forensic Claim Fact-Checker
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-mono">MULTI-SOURCE LIVE AUDIT</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Type any market claim or competitor hypothesis to fact-check against live sources..."
+                    value={customClaimToVerify}
+                    onChange={(e) => setCustomClaimToVerify(e.target.value)}
+                    className="text-xs h-8 bg-background/80"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleVerifyClaim(customClaimToVerify, "custom");
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    disabled={verifyingClaimId === "custom" || !customClaimToVerify.trim()}
+                    onClick={() => handleVerifyClaim(customClaimToVerify, "custom")}
+                    className="h-8 text-xs font-medium bg-cyan-600 hover:bg-cyan-500 text-white shrink-0 gap-1"
+                  >
+                    {verifyingClaimId === "custom" ? (
+                      <>
+                        <Loader2 className="size-3 animate-spin" /> Verifying...
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="size-3.5" /> [VERIFY]
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {verificationResults["custom"] && (
+                  <div className="rounded-lg border border-cyan-700/40 bg-background/70 p-3 text-xs space-y-2 mt-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          className={
+                            verificationResults["custom"].status === "VERIFIED"
+                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                              : verificationResults["custom"].status === "PARTIALLY_VERIFIED"
+                                ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                                : "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                          }
+                        >
+                          {verificationResults["custom"].status} ({verificationResults["custom"].grading})
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          Confidence: <strong className="text-foreground">{verificationResults["custom"].confidenceScore}%</strong>
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-foreground leading-relaxed">
+                      {verificationResults["custom"].explanation}
+                    </p>
+                    {verificationResults["custom"].supportingEvidence?.length > 0 && (
+                      <div className="text-[11px] text-emerald-400/90 space-y-0.5">
+                        <span className="font-semibold">Supporting Evidence:</span>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          {verificationResults["custom"].supportingEvidence.map((se, i) => (
+                            <li key={i}>{se}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {verificationResults["custom"].contradictingEvidence?.length > 0 && (
+                      <div className="text-[11px] text-rose-400/90 space-y-0.5">
+                        <span className="font-semibold">Contradicting Findings:</span>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          {verificationResults["custom"].contradictingEvidence.map((ce, i) => (
+                            <li key={i}>{ce}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Add Source Drawer / Form */}
               {showAddSource && (
                 <div className="rounded-xl border border-primary/40 bg-primary/5 p-4 space-y-3">
@@ -926,37 +1153,80 @@ export function OpportunityDetailDialog({
               {/* Sources List */}
               {opp.sources && opp.sources.length > 0 ? (
                 <div className="space-y-3">
-                  {opp.sources.map((s) => (
-                    <div key={s.id} className="rounded-xl border border-border/80 bg-card p-3.5 text-xs space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                              s.grading === "FACT"
-                                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                                : s.grading === "SOURCE_BASED_CLAIM"
-                                  ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
-                                  : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                            }`}
-                          >
-                            {s.grading}
-                          </span>
-                          <span className="font-semibold text-foreground">{s.title}</span>
+                  {opp.sources.map((s) => {
+                    const verified = verificationResults[s.id];
+                    return (
+                      <div key={s.id} className="rounded-xl border border-border/80 bg-card p-3.5 text-xs space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                s.grading === "FACT"
+                                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                                  : s.grading === "SOURCE_BASED_CLAIM"
+                                    ? "bg-sky-500/15 text-sky-400 border border-sky-500/30"
+                                    : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                              }`}
+                            >
+                              {s.grading}
+                            </span>
+                            <span className="font-semibold text-foreground">{s.title}</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={verifyingClaimId === s.id}
+                              onClick={() => handleVerifyClaim(s.title + " " + (s.summary || ""), s.id)}
+                              className="h-6 px-2 text-[10px] text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30 gap-1 border border-cyan-800/40"
+                              title="Re-verify this claim against live sources"
+                            >
+                              {verifyingClaimId === s.id ? (
+                                <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="size-3" />
+                              )}
+                              [VERIFY]
+                            </Button>
+                            {s.url && (
+                              <a
+                                href={s.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline flex items-center gap-1 shrink-0"
+                              >
+                                Visit <ExternalLink className="size-3" />
+                              </a>
+                            )}
+                          </div>
                         </div>
-                        {s.url && (
-                          <a
-                            href={s.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline flex items-center gap-1 shrink-0"
-                          >
-                            Visit <ExternalLink className="size-3" />
-                          </a>
+                        {s.summary && <p className="text-muted-foreground leading-relaxed">{s.summary}</p>}
+
+                        {/* Inline Verification Result for this specific source */}
+                        {verified && (
+                          <div className="mt-2 pt-2 border-t border-border/60 text-[11px] space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                className={
+                                  verified.status === "VERIFIED"
+                                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                                    : verified.status === "PARTIALLY_VERIFIED"
+                                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                                      : "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                                }
+                              >
+                                {verified.status}
+                              </Badge>
+                              <span className="text-muted-foreground font-mono">
+                                Audit confidence: {verified.confidenceScore}%
+                              </span>
+                            </div>
+                            <p className="text-foreground/90">{verified.explanation}</p>
+                          </div>
                         )}
                       </div>
-                      {s.summary && <p className="text-muted-foreground leading-relaxed">{s.summary}</p>}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground italic">No evidence sources attached yet.</p>

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { runOpportunityResearchPipeline } from "@/lib/research/pipeline";
+import { runResearch } from "@/lib/research/runner";
 
 export const maxDuration = 120; // Allow sufficient time for multi-source scraping and LLM generation
 
@@ -19,25 +19,27 @@ export async function POST(req: Request) {
       }
     }
 
-    let body: { mode?: "quick" | "deep"; topic?: string; niche?: string } = {};
+    let body: { mode?: "quick" | "standard" | "deep"; topic?: string; niche?: string; configId?: string } = {};
     try {
       body = await req.json();
     } catch {
       // Allow empty body (defaults to quick mode)
     }
 
-    const mode = body.mode === "deep" ? "deep" : "quick";
-    const result = await runOpportunityResearchPipeline({
-      mode,
-      topic: body.topic,
-      niche: body.niche,
+    const depth = body.mode === "deep" ? "deep" : "quick";
+    const result = await runResearch({
+      configId: body.configId,
+      field: body.topic || body.niche || "B2B SaaS",
+      depth,
     });
 
     return NextResponse.json({
       success: true,
-      mode: result.stats.mode,
+      runId: result.runId,
+      mode: depth,
       createdCount: result.opportunities.length,
       durationMs: result.stats.durationMs,
+      stats: result.stats,
       opportunities: result.opportunities,
     });
   } catch (error) {

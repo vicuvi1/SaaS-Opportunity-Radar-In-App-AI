@@ -46,6 +46,15 @@ export const opportunitiesTable = sqliteTable("opportunities", {
   competitors: text("competitors").default("[]"), // JSON array
   sources: text("sources").default("[]"), // JSON array
 
+  // Market Crowdedness & 13-Pass Deep Research Intelligence
+  marketCrowdedness: text("market_crowdedness").default("MEDIUM"),
+  marketCrowdednessScore: integer("market_crowdedness_score").default(50),
+  whyItCouldWork: text("why_it_could_work").default("[]"), // JSON string array
+  whyItMightNotWork: text("why_it_might_not_work").default("[]"), // JSON string array
+  whatWeStillDontKnow: text("what_we_still_dont_know").default("[]"), // JSON string array
+  nextValidationSteps: text("next_validation_steps").default("[]"), // JSON string array
+  lastDeepResearchAt: text("last_deep_research_at"),
+
   // Workflow & Classification
   status: text("status").notNull().default("NEW"),
   isNewDiscovery: integer("is_new_discovery").notNull().default(1), // 1 = in New Discoveries Inbox

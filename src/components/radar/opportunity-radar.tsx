@@ -9,6 +9,7 @@ import type {
 } from "@/lib/opportunities/types";
 import { KanbanBoard } from "./kanban-board";
 import { TableView } from "./table-view";
+import { MarketMatrix } from "./market-matrix";
 import { OpportunityDetailDialog } from "./opportunity-detail-dialog";
 import { CreateOpportunityDialog } from "./create-opportunity-dialog";
 import { NewDiscoveriesInbox } from "./new-discoveries-inbox";
@@ -58,6 +59,7 @@ import {
   X,
   BarChart2,
   History,
+  Compass,
 } from "lucide-react";
 
 interface OpportunityRadarProps {
@@ -72,6 +74,7 @@ interface OpportunityRadarProps {
 type ViewMode =
   | "kanban"
   | "table"
+  | "matrix"
   | "shortlist"
   | "copilot"
   | "saved"
@@ -813,6 +816,15 @@ export function OpportunityRadar({
               Table View
             </Button>
             <Button
+              variant={viewMode === "matrix" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 text-xs gap-1 px-2.5 font-medium text-cyan-400 hover:text-cyan-300"
+              onClick={() => setViewMode("matrix")}
+            >
+              <Compass className="size-3.5 text-cyan-400" />
+              Market Matrix
+            </Button>
+            <Button
               variant={viewMode === "copilot" ? "secondary" : "ghost"}
               size="sm"
               className="h-7 text-xs gap-1 px-2.5 font-medium border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
@@ -1053,7 +1065,12 @@ export function OpportunityRadar({
 
       {/* ── MAIN WORKSPACE CONTENT ─────────────────────────────────── */}
       <div className="flex-1 overflow-hidden p-4">
-        {viewMode === "copilot" ? (
+        {viewMode === "matrix" ? (
+          <MarketMatrix
+            opportunities={filteredOpportunities}
+            onSelectOpportunity={(opp) => setSelectedOpp(opp)}
+          />
+        ) : viewMode === "copilot" ? (
           <CopilotChat
             onRefreshOpportunities={fetchOpportunities}
             onSelectOpportunity={(opp) => setSelectedOpp(opp)}

@@ -53,10 +53,24 @@ import {
   Star,
   Trash2,
   KeyRound,
+  Inbox,
+  Bookmark,
+  CheckSquare,
+  History,
+  Cpu,
+  Sliders,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { OpportunityRadar } from "@/components/radar/opportunity-radar";
 import { CopilotChat } from "@/components/copilot/copilot-chat";
 import { IntegrationsHub } from "@/components/integrations/integrations-hub";
+import { ResearchConfigModal } from "@/components/radar/research-config-modal";
 import { CreditsBadge } from "@/components/credits/credits-badge";
 import { BuyCreditsModal } from "@/components/credits/buy-credits-modal";
 import { useCredits } from "@/components/credits/use-credits";
@@ -85,6 +99,8 @@ function newBlankThread(): ForgeThread {
 
 export function Workspace() {
   const [activeAppTab, setActiveAppTab] = useState<"radar" | "copilot" | "studio" | "integrations">("radar");
+  const [radarNavTab, setRadarNavTab] = useState<string>("radar");
+  const [aiModelsOpen, setAiModelsOpen] = useState(false);
   const [threads, setThreads] = useState<ForgeThread[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -445,60 +461,119 @@ export function Workspace() {
         </div>
 
         {/* Global Navigation Switcher */}
-        <div className="flex items-center rounded-lg border border-border/70 bg-card/60 p-1">
+        <nav className="flex items-center rounded-lg border border-border/70 bg-card/60 p-1 gap-0.5 overflow-x-auto max-w-full">
           <button
             type="button"
-            onClick={() => setActiveAppTab("radar")}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
-              activeAppTab === "radar"
+            onClick={() => {
+              setActiveAppTab("radar");
+              setRadarNavTab("radar");
+            }}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "radar" && radarNavTab === "radar"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Compass className="size-3.5" />
-            <span className="hidden sm:inline">Opportunity Radar</span>
-            <span className="sm:hidden">Radar</span>
+            <span>Radar</span>
           </button>
+
           <button
             type="button"
-            onClick={() => setActiveAppTab("copilot")}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
-              activeAppTab === "copilot"
+            onClick={() => {
+              setActiveAppTab("radar");
+              setRadarNavTab("discover");
+            }}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "radar" && radarNavTab === "discover"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <MessageSquare className="size-3.5" />
-            <span className="hidden sm:inline">AI Copilot</span>
-            <span className="sm:hidden">Copilot</span>
+            <Inbox className="size-3.5" />
+            <span>Discover</span>
           </button>
+
           <button
             type="button"
-            onClick={() => setActiveAppTab("studio")}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
-              activeAppTab === "studio"
+            onClick={() => {
+              setActiveAppTab("radar");
+              setRadarNavTab("deep-research");
+            }}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "radar" && radarNavTab === "deep-research"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Sparkles className="size-3.5" />
-            <span className="hidden sm:inline">IdeaForge Studio</span>
-            <span className="sm:hidden">Studio</span>
+            <span>Deep Research</span>
           </button>
+
           <button
             type="button"
-            onClick={() => setActiveAppTab("integrations")}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-all ${
-              activeAppTab === "integrations"
+            onClick={() => {
+              setActiveAppTab("radar");
+              setRadarNavTab("copilot");
+            }}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "radar" && radarNavTab === "copilot"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <KeyRound className="size-3.5" />
-            <span className="hidden sm:inline">Integrations</span>
-            <span className="sm:hidden">Vault</span>
+            <MessageSquare className="size-3.5" />
+            <span>AI Copilot</span>
           </button>
-        </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveAppTab("radar");
+              setRadarNavTab("saved");
+            }}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "radar" && radarNavTab === "saved"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Bookmark className="size-3.5" />
+            <span>Saved</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveAppTab("radar");
+              setRadarNavTab("shortlist");
+            }}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "radar" && radarNavTab === "shortlist"
+                ? "bg-emerald-500 text-white shadow-sm font-bold"
+                : "text-emerald-400 hover:text-emerald-300"
+            }`}
+          >
+            <CheckSquare className="size-3.5" />
+            <span>Shortlist</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveAppTab("radar");
+              setRadarNavTab("research-history");
+            }}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+              activeAppTab === "radar" && radarNavTab === "research-history"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <History className="size-3.5" />
+            <span>Research History</span>
+          </button>
+        </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
@@ -506,15 +581,27 @@ export function Workspace() {
             Local-First (SQLite)
           </span>
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-          >
-            <Settings className="size-4 text-muted-foreground hover:text-foreground" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md border border-border/80 bg-background/80 px-2.5 h-8 text-xs font-medium hover:bg-muted gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+              <Settings className="size-4" />
+              <span className="hidden md:inline">Settings</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 text-xs">
+              <DropdownMenuItem onClick={() => setActiveAppTab("integrations")}>
+                <KeyRound className="size-3.5 mr-2 text-primary" />
+                Integrations Hub
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setAiModelsOpen(true)}>
+                <Cpu className="size-3.5 mr-2 text-purple-400" />
+                AI Models & Engine
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                <Sliders className="size-3.5 mr-2 text-muted-foreground" />
+                System Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {user && <SignInDialog user={user} />}
         </div>
@@ -611,6 +698,7 @@ export function Workspace() {
       <div className="flex min-h-0 flex-1">
         {activeAppTab === "radar" ? (
           <OpportunityRadar
+            activeNavTab={radarNavTab}
             onOpenIntegrations={() => setActiveAppTab("integrations")}
             onSendToValidate={(topic) => {
               const newThread = newBlankThread();
@@ -797,6 +885,10 @@ export function Workspace() {
           </>
         )}
       </div>
+      <ResearchConfigModal
+        open={aiModelsOpen}
+        onOpenChange={setAiModelsOpen}
+      />
     </div>
   );
 }

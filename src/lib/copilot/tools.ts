@@ -114,18 +114,14 @@ export const copilotTools = {
 
   // State Changing Action Tools
   updateStatus: tool({
-    description: "Move an opportunity to a new lifecycle workflow status. Transitions to REJECTED or ARCHIVED require confirmation.",
+    description: "Move an opportunity to a new lifecycle workflow status (NEW, REVIEW, DEEP_RESEARCH, SHORTLIST, REJECTED, ARCHIVED).",
     inputSchema: z.object({
       id: z.string().describe("The opportunity ID to update"),
       status: z.enum([
         "NEW",
         "REVIEW",
-        "INTERESTING",
-        "RESEARCHING",
-        "VALIDATING",
-        "MVP",
-        "BUILDING",
-        "LAUNCHED",
+        "DEEP_RESEARCH",
+        "SHORTLIST",
         "REJECTED",
         "ARCHIVED",
       ]).describe("Target workflow stage"),
@@ -140,6 +136,24 @@ export const copilotTools = {
         title: updated.title,
         newStatus: updated.status,
         reason,
+      };
+    },
+  }),
+
+  updateDecision: tool({
+    description: "Update the user's personal decision status (UNDECIDED, INTERESTED, SHORTLISTED, REJECTED).",
+    inputSchema: z.object({
+      id: z.string().describe("The opportunity ID"),
+      decision: z.enum(["UNDECIDED", "INTERESTED", "SHORTLISTED", "REJECTED"]).describe("Personal human decision status"),
+    }),
+    execute: async ({ id, decision }) => {
+      const updated = await opportunityStore.update(id, { myDecision: decision });
+      if (!updated) return { error: `Opportunity ${id} not found.` };
+      return {
+        success: true,
+        id: updated.id,
+        title: updated.title,
+        myDecision: updated.myDecision,
       };
     },
   }),

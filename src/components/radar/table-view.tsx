@@ -31,12 +31,8 @@ interface TableViewProps {
 const ALL_STATUSES: OpportunityStatus[] = [
   "NEW",
   "REVIEW",
-  "INTERESTING",
-  "RESEARCHING",
-  "VALIDATING",
-  "MVP",
-  "BUILDING",
-  "LAUNCHED",
+  "DEEP_RESEARCH",
+  "SHORTLIST",
   "REJECTED",
   "ARCHIVED",
 ];
@@ -44,10 +40,8 @@ const ALL_STATUSES: OpportunityStatus[] = [
 const ALL_DECISIONS: MyDecision[] = [
   "UNDECIDED",
   "INTERESTED",
-  "LATER",
-  "VALIDATING",
-  "BUILD",
-  "DO_NOT_BUILD",
+  "SHORTLISTED",
+  "REJECTED",
 ];
 
 export function TableView({
@@ -208,11 +202,13 @@ export function TableView({
                     value={opp.myDecision}
                     onChange={(e) => onDecisionChange(opp.id, e.target.value as MyDecision)}
                     className={`rounded-lg border px-2 py-1 text-xs font-medium focus:outline-none ${
-                      opp.myDecision === "BUILD"
+                      opp.myDecision === "SHORTLISTED"
                         ? "border-emerald-500/50 bg-emerald-950/40 text-emerald-300"
                         : opp.myDecision === "INTERESTED"
                           ? "border-sky-500/50 bg-sky-950/40 text-sky-300"
-                          : "border-border/70 bg-background text-foreground"
+                          : opp.myDecision === "REJECTED"
+                            ? "border-rose-500/50 bg-rose-950/40 text-rose-300"
+                            : "border-border/70 bg-background text-foreground"
                     }`}
                   >
                     {ALL_DECISIONS.map((d) => (

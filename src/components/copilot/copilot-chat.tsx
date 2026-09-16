@@ -448,6 +448,33 @@ export function CopilotChat({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* ── RESEARCH ACTION CHIPS ────────────────────────────────────── */}
+      <div className="border-t border-border/60 bg-muted/20 px-3 py-2 flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
+        <span className="font-semibold text-muted-foreground/80 shrink-0 mr-1 flex items-center gap-1">
+          <Sparkles className="size-3 text-primary" />
+          Research Prompts:
+        </span>
+        {[
+          "Research this opportunity",
+          "Find competitors",
+          "Find customer complaints",
+          "Challenge this idea",
+          "Find missing evidence",
+          "Compare opportunities",
+          "Summarize evidence",
+          "What should I investigate next?",
+        ].map((promptText) => (
+          <button
+            key={promptText}
+            type="button"
+            onClick={() => handleSendMessage(promptText)}
+            className="rounded-full border border-border/80 bg-background/90 px-2.5 py-0.5 text-[11px] text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-muted shrink-0 transition-colors"
+          >
+            {promptText}
+          </button>
+        ))}
+      </div>
+
       {/* ── PROMPT INPUT BAR ────────────────────────────────────────── */}
       <div className="border-t border-border/70 bg-card/60 p-3">
         <form

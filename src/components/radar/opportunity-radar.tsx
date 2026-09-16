@@ -13,6 +13,8 @@ import { OpportunityDetailDialog } from "./opportunity-detail-dialog";
 import { CreateOpportunityDialog } from "./create-opportunity-dialog";
 import { NewDiscoveriesInbox } from "./new-discoveries-inbox";
 import { DeepResearchDialog } from "./deep-research-dialog";
+import { OpportunityComparisonDialog } from "./opportunity-comparison-dialog";
+import { ResearchHistoryModal } from "./research-history-modal";
 import { TelegramDispatchModal } from "./telegram-dispatch-modal";
 import { ResearchConfigModal } from "./research-config-modal";
 import { BackupModal } from "./backup-modal";
@@ -54,26 +56,36 @@ import {
   Database,
   CheckSquare,
   X,
+  BarChart2,
+  History,
 } from "lucide-react";
 
 interface OpportunityRadarProps {
   onSendToValidate?: (topic: string) => void;
   onOpenIntegrations?: () => void;
+  activeNavTab?: string;
+  onOpenCopilot?: () => void;
+  onOpenDiscover?: () => void;
+  onOpenDeepResearch?: () => void;
 }
 
 type ViewMode =
   | "kanban"
   | "table"
+  | "shortlist"
   | "copilot"
   | "saved"
   | "favorites"
   | "my-ideas"
   | "high-potential"
-  | "validating"
   | "rejected"
   | "archived";
 
-export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: OpportunityRadarProps) {
+export function OpportunityRadar({
+  onSendToValidate,
+  onOpenIntegrations,
+  activeNavTab,
+}: OpportunityRadarProps) {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [researching, setResearching] = useState<"quick" | "deep" | false>(false);
@@ -97,6 +109,10 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
   const [telegramDispatchOpen, setTelegramDispatchOpen] = useState(false);
   const [researchConfigOpen, setResearchConfigOpen] = useState(false);
   const [backupModalOpen, setBackupModalOpen] = useState(false);
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [researchHistoryOpen, setResearchHistoryOpen] = useState(false);
+  const [filterRunId, setFilterRunId] = useState<string | null>(null);
+  const [filterRunTopic, setFilterRunTopic] = useState<string | null>(null);
 
   // Filter & Search states
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
@@ -105,6 +121,23 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [selectedConfidence, setSelectedConfidence] = useState("all");
   const [sortBy, setSortBy] = useState("updated");
+
+  // Synchronize viewMode with activeNavTab if provided
+  useEffect(() => {
+    if (activeNavTab === "radar") setViewMode("kanban");
+    else if (activeNavTab === "discover") setInboxOpen(true);
+    else if (activeNavTab === "deep-research") {
+      setViewMode("kanban");
+      const first = opportunities[0];
+      if (first) {
+        setDeepResearchTarget(first);
+        setDeepResearchOpen(true);
+      }
+    } else if (activeNavTab === "copilot") setViewMode("copilot");
+    else if (activeNavTab === "saved") setViewMode("saved");
+    else if (activeNavTab === "shortlist") setViewMode("shortlist");
+    else if (activeNavTab === "research-history") setResearchHistoryOpen(true);
+  }, [activeNavTab, opportunities]);
 
   // Load opportunities from API
   const fetchOpportunities = useCallback(async () => {
@@ -172,9 +205,11 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
     const favorites = opportunities.filter((o) => o.favorite).length;
     const saved = opportunities.filter((o) => o.saved).length;
     const myIdeas = opportunities.filter((o) => o.isUserGenerated).length;
-    const validating = opportunities.filter((o) => o.status === "VALIDATING").length;
-    const building = opportunities.filter((o) => o.status === "BUILDING").length;
-    const mvp = opportunities.filter((o) => o.status === "MVP").length;
+    const shortlist = opportunities.filter(
+      (o) => o.status === "SHORTLIST" || o.myDecision === "SHORTLISTED",
+    ).length;
+    const review = opportunities.filter((o) => o.status === "REVIEW").length;
+    const deepResearch = opportunities.filter((o) => o.status === "DEEP_RESEARCH").length;
     const newCount = opportunities.filter((o) => o.status === "NEW").length;
     const newDiscoveriesCount = opportunities.filter((o) => o.isNewDiscovery).length;
     return {
@@ -183,9 +218,9 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
       favorites,
       saved,
       myIdeas,
-      validating,
-      building,
-      mvp,
+      shortlist,
+      review,
+      deepResearch,
       newCount,
       newDiscoveriesCount,
     };
@@ -197,12 +232,17 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
       // Staged new discoveries are held in Daily Inbox
       if (opp.isNewDiscovery) return false;
 
+      // Filter by research run drilldown if active
+      if (filterRunId && opp.researchRunId !== filterRunId) return false;
+
       // Tab view constraints
+      if (viewMode === "shortlist" && opp.status !== "SHORTLIST" && opp.myDecision !== "SHORTLISTED") {
+        return false;
+      }
       if (viewMode === "saved" && !opp.saved) return false;
       if (viewMode === "favorites" && !opp.favorite) return false;
       if (viewMode === "my-ideas" && !opp.isUserGenerated) return false;
       if (viewMode === "high-potential" && opp.aiPriority !== "HIGH_POTENTIAL") return false;
-      if (viewMode === "validating" && opp.status !== "VALIDATING") return false;
       if (viewMode === "rejected" && opp.status !== "REJECTED") return false;
       if (viewMode === "archived" && opp.status !== "ARCHIVED") return false;
 
@@ -469,7 +509,7 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
       setOpportunities((prev) =>
         prev.map((o) =>
           o.id === id
-            ? { ...o, isNewDiscovery: false, status: "REJECTED", myDecision: "DO_NOT_BUILD" }
+            ? { ...o, isNewDiscovery: false, status: "REJECTED", myDecision: "REJECTED" }
             : o,
         ),
       );
@@ -480,11 +520,55 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
           body: JSON.stringify({
             isNewDiscovery: false,
             status: "REJECTED",
-            myDecision: "DO_NOT_BUILD",
+            myDecision: "REJECTED",
           }),
         });
       } catch (err) {
         console.error("Failed to reject discovery:", err);
+        fetchOpportunities();
+      }
+    },
+    [fetchOpportunities],
+  );
+
+  const handleShortlistOpportunity = useCallback(
+    async (id: string, e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      setOpportunities((prev) =>
+        prev.map((o) =>
+          o.id === id ? { ...o, status: "SHORTLIST", myDecision: "SHORTLISTED" } : o,
+        ),
+      );
+      try {
+        await fetch(`/api/opportunities/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "SHORTLIST", myDecision: "SHORTLISTED" }),
+        });
+      } catch (err) {
+        console.error("Failed to shortlist opportunity:", err);
+        fetchOpportunities();
+      }
+    },
+    [fetchOpportunities],
+  );
+
+  const handleRejectOpportunity = useCallback(
+    async (id: string, e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      setOpportunities((prev) =>
+        prev.map((o) =>
+          o.id === id ? { ...o, status: "REJECTED", myDecision: "REJECTED" } : o,
+        ),
+      );
+      try {
+        await fetch(`/api/opportunities/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "REJECTED", myDecision: "REJECTED" }),
+        });
+      } catch (err) {
+        console.error("Failed to reject opportunity:", err);
         fetchOpportunities();
       }
     },
@@ -771,12 +855,22 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
               High Potential ({stats.highPotential})
             </Button>
             <Button
-              variant={viewMode === "validating" ? "secondary" : "ghost"}
+              variant={viewMode === "shortlist" ? "secondary" : "ghost"}
               size="sm"
-              className="h-7 text-xs gap-1 px-2"
-              onClick={() => setViewMode("validating")}
+              className="h-7 text-xs gap-1 px-2 font-semibold text-emerald-400"
+              onClick={() => setViewMode("shortlist")}
             >
-              Validating ({stats.validating})
+              Shortlist ({stats.shortlist})
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1 px-2 text-violet-400 hover:text-violet-300"
+              onClick={() => setResearchHistoryOpen(true)}
+              title="View past research runs"
+            >
+              <History className="size-3.5" />
+              History
             </Button>
             <Button
               variant={viewMode === "rejected" ? "secondary" : "ghost"}
@@ -870,6 +964,18 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
           </div>
 
           <div className="flex items-center gap-2">
+            {selectedIds.size >= 2 && selectedIds.size <= 5 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1.5 border-purple-500/40 text-purple-300 hover:bg-purple-500/10 font-medium"
+                onClick={() => setCompareModalOpen(true)}
+              >
+                <BarChart2 className="size-3" />
+                Compare ({selectedIds.size})
+              </Button>
+            )}
+
             <Button
               size="sm"
               variant="outline"
@@ -885,24 +991,63 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
                 Mark Decision...
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="text-xs">
-                <DropdownMenuItem onClick={() => handleBulkDecision("BUILD")}>
-                  Mark BUILD
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkDecision("VALIDATING")}>
-                  Mark VALIDATING
+                <DropdownMenuItem onClick={() => handleBulkDecision("SHORTLISTED")}>
+                  Mark SHORTLISTED
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleBulkDecision("INTERESTED")}>
                   Mark INTERESTED
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkDecision("LATER")}>
-                  Mark LATER
+                <DropdownMenuItem onClick={() => handleBulkDecision("REJECTED")}>
+                  Mark REJECTED
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkDecision("DO_NOT_BUILD")}>
-                  Mark DO NOT BUILD
+                <DropdownMenuItem onClick={() => handleBulkDecision("UNDECIDED")}>
+                  Mark UNDECIDED
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
+      )}
+
+      {/* ── BANNERS ─────────────────────────────────────────────────── */}
+      {stats.newDiscoveriesCount > 0 && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/30 px-6 py-2 flex items-center justify-between gap-3 text-xs animate-in fade-in">
+          <div className="flex items-center gap-2 text-emerald-400 font-medium">
+            <Inbox className="size-4 shrink-0" />
+            <span>
+              You have <strong>{stats.newDiscoveriesCount}</strong> new AI discoveries waiting in your Daily Inbox.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-xs gap-1 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/20"
+            onClick={() => setInboxOpen(true)}
+          >
+            Open Inbox
+          </Button>
+        </div>
+      )}
+
+      {filterRunId && (
+        <div className="bg-violet-500/10 border-b border-violet-500/30 px-6 py-2 flex items-center justify-between gap-3 text-xs animate-in fade-in">
+          <div className="flex items-center gap-2 text-violet-300">
+            <History className="size-4 shrink-0 text-violet-400" />
+            <span>
+              Filtered by Research Run: <strong className="font-semibold text-foreground">{filterRunTopic || filterRunId}</strong>
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setFilterRunId(null);
+              setFilterRunTopic(null);
+            }}
+          >
+            <X className="size-3 mr-1" /> Clear Filter
+          </Button>
         </div>
       )}
 
@@ -914,11 +1059,11 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
             onSelectOpportunity={(opp) => setSelectedOpp(opp)}
           />
         ) : viewMode === "table" ||
+          viewMode === "shortlist" ||
           viewMode === "saved" ||
           viewMode === "favorites" ||
           viewMode === "my-ideas" ||
           viewMode === "high-potential" ||
-          viewMode === "validating" ||
           viewMode === "rejected" ||
           viewMode === "archived" ? (
           <TableView
@@ -949,6 +1094,8 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             onDeepResearch={handleDeepResearch}
+            onShortlist={handleShortlistOpportunity}
+            onReject={handleRejectOpportunity}
           />
         )}
       </div>
@@ -962,6 +1109,7 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
         }}
         onUpdateOpportunity={handleUpdateOpportunity}
         onSendToValidate={onSendToValidate}
+        onDeepResearch={handleDeepResearch}
       />
 
       <CreateOpportunityDialog
@@ -1000,6 +1148,26 @@ export function OpportunityRadar({ onSendToValidate, onOpenIntegrations }: Oppor
         onOpportunityUpdated={(updated) => {
           setOpportunities((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
           setSelectedOpp(updated);
+        }}
+      />
+
+      <OpportunityComparisonDialog
+        open={compareModalOpen}
+        onOpenChange={setCompareModalOpen}
+        opportunities={opportunities.filter((o) => selectedIds.has(o.id))}
+        onStatusChange={handleStatusChange}
+        onDecisionChange={handleDecisionChange}
+        onDeepResearch={handleDeepResearch}
+        onRemoveFromCompare={handleToggleSelect}
+      />
+
+      <ResearchHistoryModal
+        open={researchHistoryOpen}
+        onOpenChange={setResearchHistoryOpen}
+        onSelectRunForFilter={(runId, topic) => {
+          setFilterRunId(runId);
+          setFilterRunTopic(topic);
+          setViewMode("kanban");
         }}
       />
 

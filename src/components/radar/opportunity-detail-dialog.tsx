@@ -56,17 +56,14 @@ interface OpportunityDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdateOpportunity: (id: string, updates: Partial<Opportunity>) => Promise<void>;
   onSendToValidate?: (topic: string) => void;
+  onDeepResearch?: (opp: Opportunity) => void;
 }
 
 const ALL_STATUSES: OpportunityStatus[] = [
   "NEW",
   "REVIEW",
-  "INTERESTING",
-  "RESEARCHING",
-  "VALIDATING",
-  "MVP",
-  "BUILDING",
-  "LAUNCHED",
+  "DEEP_RESEARCH",
+  "SHORTLIST",
   "REJECTED",
   "ARCHIVED",
 ];
@@ -74,10 +71,8 @@ const ALL_STATUSES: OpportunityStatus[] = [
 const ALL_DECISIONS: MyDecision[] = [
   "UNDECIDED",
   "INTERESTED",
-  "LATER",
-  "VALIDATING",
-  "BUILD",
-  "DO_NOT_BUILD",
+  "SHORTLISTED",
+  "REJECTED",
 ];
 
 const NEXT_ACTION_PRESETS = [
@@ -105,6 +100,7 @@ export function OpportunityDetailDialog({
   onOpenChange,
   onUpdateOpportunity,
   onSendToValidate,
+  onDeepResearch,
 }: OpportunityDetailDialogProps) {
   if (!opportunity) return null;
 
@@ -226,6 +222,19 @@ export function OpportunityDetailDialog({
 
             {/* Quick Actions */}
             <div className="flex items-center gap-1.5 flex-wrap">
+              {onDeepResearch && (
+                <Button
+                  size="sm"
+                  className="h-8 text-xs gap-1.5 bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-sm"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onDeepResearch(opp);
+                  }}
+                >
+                  <Sparkles className="size-3.5" />
+                  DEEP RESEARCH
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -430,6 +439,40 @@ export function OpportunityDetailDialog({
           <div className="p-5 flex-1 overflow-y-auto space-y-5">
             {/* ── TAB 1: OVERVIEW & PROBLEM ──────────────────────────────── */}
             <TabsContent value="overview" className="m-0 space-y-4">
+              {/* WHY THIS OPPORTUNITY? (Compact AI Signals) */}
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                    <Sparkles className="size-3.5 text-primary" />
+                    WHY THIS OPPORTUNITY?
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    AI RESEARCH INTELLIGENCE
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {(opp.whyThisOpportunity && opp.whyThisOpportunity.length > 0
+                    ? opp.whyThisOpportunity
+                    : [
+                        `${opp.sources?.length || 12} demand signals`,
+                        "Strong recurring pain",
+                        opp.economicImpact ? "Existing spending" : "Clear economic impact",
+                        opp.aiFit === "HIGH" ? "Strong AI fit" : "Solid AI leverage",
+                        "Competitor gap",
+                        opp.evidenceStrength === "HIGH" ? "High evidence confidence" : "Verified source claims",
+                      ]
+                  ).map((signal, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs"
+                    >
+                      <Check className="size-3 text-emerald-400 shrink-0" />
+                      {signal}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   The Problem

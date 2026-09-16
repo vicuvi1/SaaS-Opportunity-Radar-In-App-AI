@@ -3,12 +3,8 @@ import { z } from "zod";
 export const opportunityStatusSchema = z.enum([
   "NEW",
   "REVIEW",
-  "INTERESTING",
-  "RESEARCHING",
-  "VALIDATING",
-  "MVP",
-  "BUILDING",
-  "LAUNCHED",
+  "DEEP_RESEARCH",
+  "SHORTLIST",
   "REJECTED",
   "ARCHIVED",
 ]);
@@ -28,10 +24,8 @@ export const evidenceStrengthSchema = z.enum(["HIGH", "MEDIUM", "LOW"]);
 export const myDecisionSchema = z.enum([
   "UNDECIDED",
   "INTERESTED",
-  "LATER",
-  "VALIDATING",
-  "BUILD",
-  "DO_NOT_BUILD",
+  "SHORTLISTED",
+  "REJECTED",
 ]);
 
 export const evidenceGradingSchema = z.enum([

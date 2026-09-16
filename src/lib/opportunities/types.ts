@@ -1,12 +1,8 @@
 export type OpportunityStatus =
   | "NEW"
   | "REVIEW"
-  | "INTERESTING"
-  | "RESEARCHING"
-  | "VALIDATING"
-  | "MVP"
-  | "BUILDING"
-  | "LAUNCHED"
+  | "DEEP_RESEARCH"
+  | "SHORTLIST"
   | "REJECTED"
   | "ARCHIVED";
 
@@ -24,10 +20,8 @@ export type EvidenceStrength = "HIGH" | "MEDIUM" | "LOW";
 export type MyDecision =
   | "UNDECIDED"
   | "INTERESTED"
-  | "LATER"
-  | "VALIDATING"
-  | "BUILD"
-  | "DO_NOT_BUILD";
+  | "SHORTLISTED"
+  | "REJECTED";
 
 export type EvidenceGrading =
   | "FACT"
@@ -109,6 +103,7 @@ export type Opportunity = {
   // Scoring & AI Assessment
   aiPriority: AiPriority;
   aiPriorityReasons: string[];
+  whyThisOpportunity?: string[];
   aiConfidence: AiConfidence;
   researchScore: number; // 0-100
   researchScoreFactors: ResearchScoreFactors;

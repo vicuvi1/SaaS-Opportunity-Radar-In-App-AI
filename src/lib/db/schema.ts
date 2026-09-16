@@ -21,10 +21,12 @@ export const opportunitiesTable = sqliteTable("opportunities", {
   // AI Priority & Scoring
   aiPriority: text("ai_priority").notNull().default("MEDIUM_POTENTIAL"),
   aiPriorityReasons: text("ai_priority_reasons").default("[]"), // JSON string array
+  whyThisOpportunity: text("why_this_opportunity").default("[]"), // JSON string array
   aiConfidence: text("ai_confidence").notNull().default("MEDIUM"),
   researchScore: integer("research_score").notNull().default(50),
   researchScoreFactors: text("research_score_factors").default("{}"), // JSON object
   evidenceStrength: text("evidence_strength").notNull().default("MEDIUM"),
+  researchRunId: text("research_run_id"),
 
   // Independent Human Decision Gate
   myDecision: text("my_decision").notNull().default("UNDECIDED"),

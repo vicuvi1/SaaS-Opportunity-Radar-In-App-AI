@@ -59,10 +59,12 @@ function initializeTables(sqlite: Database.Database) {
       ai_fit TEXT DEFAULT 'MEDIUM',
       ai_priority TEXT NOT NULL DEFAULT 'MEDIUM_POTENTIAL',
       ai_priority_reasons TEXT DEFAULT '[]',
+      why_this_opportunity TEXT DEFAULT '[]',
       ai_confidence TEXT NOT NULL DEFAULT 'MEDIUM',
       research_score INTEGER NOT NULL DEFAULT 50,
       research_score_factors TEXT DEFAULT '{}',
       evidence_strength TEXT NOT NULL DEFAULT 'MEDIUM',
+      research_run_id TEXT,
       my_decision TEXT NOT NULL DEFAULT 'UNDECIDED',
       next_action TEXT DEFAULT '',
       my_thoughts TEXT DEFAULT '',
@@ -213,6 +215,29 @@ function initializeTables(sqlite: Database.Database) {
       updated_at TEXT NOT NULL
     );
   `);
+
+  // Ensure new columns exist on existing databases
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN research_run_id TEXT;");
+  } catch {}
+  try {
+    sqlite.exec("ALTER TABLE opportunities ADD COLUMN why_this_opportunity TEXT DEFAULT '[]';");
+  } catch {}
+
+  // Safe migration for workflow statuses and human decisions
+  try {
+    sqlite.exec(`
+      UPDATE opportunities SET status = 'DEEP_RESEARCH' WHERE status = 'RESEARCHING';
+      UPDATE opportunities SET status = 'REVIEW' WHERE status IN ('INTERESTING', 'VALIDATING');
+      UPDATE opportunities SET status = 'SHORTLIST' WHERE status IN ('MVP', 'BUILDING', 'LAUNCHED');
+      UPDATE opportunities SET my_decision = 'SHORTLISTED' WHERE my_decision = 'BUILD';
+      UPDATE opportunities SET my_decision = 'REJECTED' WHERE my_decision = 'DO_NOT_BUILD';
+      UPDATE opportunities SET my_decision = 'INTERESTED' WHERE my_decision = 'VALIDATING';
+      UPDATE opportunities SET my_decision = 'UNDECIDED' WHERE my_decision = 'LATER';
+    `);
+  } catch (err) {
+    console.warn("[db] Workflow migration notice:", err);
+  }
 }
 
 function seedInitialOpportunitiesIfEmpty(sqlite: Database.Database) {

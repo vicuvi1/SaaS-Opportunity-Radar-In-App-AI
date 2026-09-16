@@ -14,6 +14,8 @@ interface KanbanBoardProps {
   onToggleFavorite: (id: string, e: React.MouseEvent) => void;
   onToggleSaved: (id: string, e: React.MouseEvent) => void;
   onStatusChange: (id: string, status: OpportunityStatus, e?: React.MouseEvent) => void;
+  onShortlist?: (id: string, e: React.MouseEvent) => void;
+  onReject?: (id: string, e: React.MouseEvent) => void;
   onDeleteOpportunity?: (id: string, e?: React.MouseEvent) => void;
   onCreateInStatus?: (status: OpportunityStatus) => void;
   selectedIds?: Set<string>;
@@ -27,14 +29,10 @@ const KANBAN_COLUMNS: Array<{
   description: string;
   accent: string;
 }> = [
-  { status: "NEW", label: "New", description: "Discovered or newly added", accent: "border-blue-500/40 text-blue-400" },
-  { status: "REVIEW", label: "Review", description: "Initial triage & sanity check", accent: "border-purple-500/40 text-purple-400" },
-  { status: "INTERESTING", label: "Interesting", description: "Promising thesis worth probing", accent: "border-indigo-500/40 text-indigo-400" },
-  { status: "RESEARCHING", label: "Researching", description: "Market signals & competitor analysis", accent: "border-cyan-500/40 text-cyan-400" },
-  { status: "VALIDATING", label: "Validating", description: "Talking to users & testing WTP", accent: "border-amber-500/40 text-amber-400" },
-  { status: "MVP", label: "MVP", description: "Scoping & prototype definition", accent: "border-orange-500/40 text-orange-400" },
-  { status: "BUILDING", label: "Building", description: "Active software development", accent: "border-emerald-500/40 text-emerald-400" },
-  { status: "LAUNCHED", label: "Launched", description: "Live product in production", accent: "border-teal-500/40 text-teal-400" },
+  { status: "NEW", label: "NEW", description: "Fresh AI discoveries", accent: "border-blue-500/50 bg-blue-500/10 text-blue-400" },
+  { status: "REVIEW", label: "REVIEW", description: "Promising thesis to explore", accent: "border-purple-500/50 bg-purple-500/10 text-purple-400" },
+  { status: "DEEP_RESEARCH", label: "DEEP RESEARCH", description: "13-dimension investigation active", accent: "border-violet-500/50 bg-violet-500/10 text-violet-400" },
+  { status: "SHORTLIST", label: "SHORTLIST", description: "Personally selected for serious pursuit", accent: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400" },
 ];
 
 export function KanbanBoard({
@@ -43,6 +41,8 @@ export function KanbanBoard({
   onToggleFavorite,
   onToggleSaved,
   onStatusChange,
+  onShortlist,
+  onReject,
   onDeleteOpportunity,
   onCreateInStatus,
   selectedIds,
@@ -52,7 +52,7 @@ export function KanbanBoard({
   const [dragOverCol, setDragOverCol] = useState<OpportunityStatus | null>(null);
 
   return (
-    <div className="flex h-full w-full gap-3 overflow-x-auto pb-4 pt-1 px-1">
+    <div className="grid h-full w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-4 pt-1 px-1 overflow-y-auto">
       {KANBAN_COLUMNS.map((col) => {
         const columnOpps = opportunities.filter((o) => o.status === col.status);
         const highPotentialCount = columnOpps.filter(
@@ -80,7 +80,7 @@ export function KanbanBoard({
                 onStatusChange(oppId, col.status);
               }
             }}
-            className={`flex w-80 shrink-0 flex-col rounded-2xl border bg-muted/20 backdrop-blur-sm transition-colors duration-150 ${
+            className={`flex w-full flex-col rounded-2xl border bg-muted/20 backdrop-blur-sm transition-colors duration-150 ${
               isTarget
                 ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                 : "border-border/60"
@@ -136,6 +136,8 @@ export function KanbanBoard({
                     onToggleFavorite={onToggleFavorite}
                     onToggleSaved={onToggleSaved}
                     onStatusChange={onStatusChange}
+                    onShortlist={onShortlist}
+                    onReject={onReject}
                     onDelete={onDeleteOpportunity}
                     isSelected={selectedIds?.has(opp.id)}
                     onToggleSelect={onToggleSelect}

@@ -122,6 +122,19 @@ function rowToOpportunity(
     notes,
     status: row.status as OpportunityStatus,
     isNewDiscovery: Boolean(row.isNewDiscovery),
+    researchRunId: (row as any).researchRunId || undefined,
+    whyThisOpportunity: (() => {
+      const parsed = safeParseJson<string[]>((row as any).whyThisOpportunity, []);
+      if (parsed && parsed.length > 0) return parsed;
+      const synthesized: string[] = [];
+      const sourcesCount = safeParseJson<OpportunitySource[]>(row.sources, []).length;
+      if (sourcesCount > 0) synthesized.push(`${sourcesCount} verified demand signals`);
+      if (row.aiFit === "HIGH") synthesized.push("Strong AI fit");
+      if (row.evidenceStrength === "HIGH") synthesized.push("High evidence confidence");
+      if (row.marketGap) synthesized.push("Unaddressed competitor gap");
+      if (row.economicImpact) synthesized.push("Clear recurring economic loss");
+      return synthesized.length > 0 ? synthesized : ["Strong recurring pain", "High AI fit"];
+    })(),
     isUserGenerated: Boolean(row.isUserGenerated),
     createdBy: (row.createdBy as "AI" | "USER") || "AI",
     source: row.source || "Discovery",
@@ -138,6 +151,7 @@ function rowToOpportunity(
 export type OpportunityFilters = {
   status?: string;
   isNewDiscovery?: boolean;
+  researchRunId?: string;
   aiPriority?: string;
   aiConfidence?: string;
   industry?: string;
@@ -177,6 +191,9 @@ export const opportunityStore = {
       if (filters) {
         if (typeof filters.isNewDiscovery === "boolean") {
           items = items.filter((o) => o.isNewDiscovery === filters.isNewDiscovery);
+        }
+        if (filters.researchRunId) {
+          items = items.filter((o) => o.researchRunId === filters.researchRunId);
         }
         if (filters.status) {
           items = items.filter((o) => o.status === filters.status);
@@ -359,10 +376,12 @@ export const opportunityStore = {
       aiFit: input.aiFit || "MEDIUM",
       aiPriority: input.aiPriority || deriveAiPriorityFromScore(calculatedScore),
       aiPriorityReasons: JSON.stringify(input.aiPriorityReasons || []),
+      whyThisOpportunity: JSON.stringify(input.whyThisOpportunity || []),
       aiConfidence: input.aiConfidence || "MEDIUM",
       researchScore: calculatedScore,
       researchScoreFactors: JSON.stringify(factors),
       evidenceStrength: input.evidenceStrength || "MEDIUM",
+      researchRunId: input.researchRunId || null,
       myDecision: input.myDecision || "UNDECIDED",
       nextAction: input.nextAction || "",
       myThoughts: input.myThoughts || "",
@@ -531,7 +550,7 @@ export const opportunityStore = {
     return this.update(id, {
       isNewDiscovery: false,
       status: "REJECTED",
-      myDecision: "DO_NOT_BUILD",
+      myDecision: "REJECTED",
     });
   },
 

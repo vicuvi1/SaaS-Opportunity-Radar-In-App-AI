@@ -314,6 +314,13 @@ TASK:
         sources: matchedSources,
         status: "NEW",
         isNewDiscovery: true, // Key: held in inbox for user review!
+        researchRunId: runId,
+        whyThisOpportunity: [
+          `${matchedSources.length} verified demand signals`,
+          `Problem severity: ${cand.scoreFactors.problemSeverity}/10`,
+          `Economic value: ${cand.scoreFactors.economicValue}/10`,
+          `AI Fit: ${cand.aiFit}`,
+        ],
         isUserGenerated: false,
         createdBy: "AI",
         source: `Radar Discovery (${depth})`,
